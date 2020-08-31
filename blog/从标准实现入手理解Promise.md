@@ -237,8 +237,19 @@ const resolvePromise = (newPromise, result, resolve, reject) => {
   if (newPromise === result) {
     return reject(new TypeError('Circular reference'));
   }
-  // 用来判断resolvePormise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
-  // 在一些返回thenable对象中，连续调用多次回调的情况
+  /**
+   * 用来判断resolvePormise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
+   * 在一些返回thenable对象中，连续调用多次回调的情况
+   * e.g. then(() => {
+   *        return {
+   *          then(resolve){
+   *            resolve(1);
+   *            resolve(2);
+   *          }
+   *        }
+   *      })
+   * 网上大部分的都没说这个情况到底是什么
+   */
   let called = false;
   if (
     result !== null &&
@@ -339,5 +350,9 @@ then(onFulfilled, onRejected) {
 827个测试项全通过~！
 
 剩下的可以增加一些api实现和判断即可
+
+# tips
+因为个人在网上看了很多类似的，但是并没有很完整的解释细节，例如called是做什么的。
+所以自己总结了一下
 
 **[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/MyPromise.js)**
