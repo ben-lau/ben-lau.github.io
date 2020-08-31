@@ -206,8 +206,19 @@ const resolvePromise = (newPromise, result, resolve, reject) => {
   if (newPromise === result) {
     return reject(new TypeError('Circular reference'));
   }
-  // 用来判断resolvePromise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
-  // 在一些返回thenable对象中，连续调用多次回调的情况
+  /**
+   * 用来判断resolvePormise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
+   * 在一些返回thenable对象中，连续调用多次回调的情况
+   * e.g. then(() => {
+   *        return {
+   *          then(resolve){
+   *            resolve(1);
+   *            resolve(2);
+   *          }
+   *        }
+   *      })
+   * 网上大部分的都没说这个情况到底是什么
+   */
   let called = false;
   if (
     result !== null &&
