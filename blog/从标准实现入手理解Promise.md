@@ -351,8 +351,60 @@ then(onFulfilled, onRejected) {
 
 剩下的可以增加一些api实现和判断即可
 
+**[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/MyPromise.js)**
+
 ### tips
 因为个人在网上看了很多类似的，但是并没有很完整的解释细节，例如called是做什么的。
-所以自己总结了一下
+所以自己总结了一下。
 
-**[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/MyPromise.js)**
+因为发现很多同学觉得Promise就是用来封装读接口的通讯方法的，这里表示Promise**不仅仅可以做读接口封装，还可以做很多有趣的封装**
+
+例如：
+- wait 等待几秒后执行
+```javascript
+const wait = time =>
+  new Promise(resolve => {
+    const timer = setTimeout(() => resolve(timer), time);
+  });
+
+(async () => {
+  console.log(1);
+  await wait(2000);
+  console.log(2);
+})();
+// print 1
+// wait for 2 seconds
+// print 2
+```
+
+
+- 早期的小程序api promise化，因为本人17年开始接触小程序，那时候小程序全是success和fail回调，用起来很头疼（现在全支持thenable调用了），所以做了个promisify函数。
+```javascript
+const promisify = wxapi => (options, ...args) =>
+  new Promise((resolve, reject) =>
+    wxapi.apply(null, [
+      {
+        ...options,
+        success: resolve,
+        fail: err => {
+          console.log(err);
+          reject(err);
+        },
+      },
+      ...args,
+    ])
+  );
+
+(async () => {
+  await promisify(wx.login)();
+  await promisify(wx.checkSession)();
+  // session有效！
+})();
+
+const loading = (title = '加载中..') => {
+  promisify(wx.showLoading)({
+    title: i18n.getLocaleByName(title),
+    mask: true
+  });
+}
+```
