@@ -77,7 +77,7 @@ request('.index')
 下面会默认读者已清楚了解Promise的api。
 
 ## Promise规范
-关于Promise的规范最早是由commonjs社区提出，毕竟多人接收的就是[Promise/A](http://wiki.commonjs.org/wiki/Promises/A)，后面因规范较为简单所以在这基础上提出了Promise/A+，这也是业界和ES6使用的标准，而ES6在这标准上还新增了Promise.resolve、Promise.reject、Promise.all、Promise.race、Promise.prototype.catch、Promise.allSettled、Promise.prototype.finally等方法。
+关于Promise的规范最早是由commonjs社区提出，毕竟多人接收的就是[Promise/A](http://wiki.commonjs.org/wiki/Promises/A)，后面因规范较为简单所以在这基础上提出了[Promise/A+](https://promisesaplus.com/#point-27)，这也是业界和ES6使用的标准，而ES6在这标准上还新增了Promise.resolve、Promise.reject、Promise.all、Promise.race、Promise.prototype.catch、Promise.allSettled、Promise.prototype.finally等方法。
 
 而测试是否符合Promise/A+标准的可以使用[promises-aplus-tests](https://github.com/promises-aplus/promises-tests)库来测试，使用方法为在自己实现的MyPromise文件中加入如下代码导出
 ```javascript
@@ -335,5 +335,9 @@ then(onFulfilled, onRejected) {
 }
 ```
 最后加入上面说的测试导出，跑一次测试即可
-
+![测试结果](https://raw.githubusercontent.com/ben-lau/blog/master/assets/promise.png)
 827个测试项全通过~！
+
+剩下的可以增加一些api实现和判断即可
+
+**[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/MyPromise.js)**
