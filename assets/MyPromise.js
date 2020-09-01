@@ -18,10 +18,10 @@ class MyPromise {
     const resolve = value => {
       if (this.status === STATUS.PENDING) {
         // 只有在等待中的状态才可以resolve
-        this.status = STATUS.FULFILLED; // 修改状态
-        this.value = value; // 保存值
         queueMicrotask(() => {
           // 当然这里可以用setTimeout模拟，只不过这个才是真正的创建了微任务
+          this.status = STATUS.FULFILLED; // 修改状态
+          this.value = value; // 保存值
           while (this.resolveQueue.length) {
             const callback = this.resolveQueue.shift();
             callback(value); // 一个个执行
@@ -32,9 +32,9 @@ class MyPromise {
     const reject = reason => {
       // 与resolve一致，只是修改的状态和保存的理由以及执行的队列不一样
       if (this.status === STATUS.PENDING) {
-        this.status = STATUS.REJECTED;
-        this.reason = reason;
         queueMicrotask(() => {
+          this.status = STATUS.REJECTED;
+          this.reason = reason;
           while (this.rejectQueue.length) {
             const callback = this.rejectQueue.shift(); // 获取拒绝回调队列
             callback(reason);
