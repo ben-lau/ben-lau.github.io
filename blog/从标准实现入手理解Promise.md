@@ -249,9 +249,12 @@ class MyPromise {
 
 ```javascript
 const resolvePromise = (newPromise, result, resolve, reject) => {
-  // 规范2.3.1，避免循环引用
+  /**
+   * 规范2.3.1，避免循环引用
+   * e.g. const p = Promise.resolve().then(() => p);
+   */
   if (newPromise === result) {
-    return reject(new TypeError('Circular reference'));
+    return reject(new TypeError('Chaining cycle detected for promise'));
   }
   /**
    * 用来判断resolvePormise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
@@ -429,3 +432,68 @@ const loading = (title = '加载中..') => {
   });
 };
 ```
+
+---
+
+### 问题
+
+在了解了源码后，其实可以延伸出一些 Promise 执行顺序的问题
+
+```javascript
+new Promise(res => {
+  res();
+  console.log(1);
+  // 代码块1
+})
+  .then(() => {
+    // 代码块2
+    console.log(2);
+    new Promise(res => {
+      res();
+      console.log(3);
+    })
+      .then(() => {
+        // 代码块3
+        console.log(4);
+        new Promise(res => {
+          res();
+          console.log(5);
+        }).then(() => {
+          // 代码块4
+          console.log(8);
+        });
+      })
+      .then(() => {
+        // 代码块5
+        console.log(9);
+        new Promise(res => {
+          res();
+          console.log(10);
+        }).then(() => {
+          // 代码块6
+          console.log(12);
+        });
+      });
+    Promise.resolve()
+      .then(() => {
+        // 代码块7
+        console.log(6);
+      })
+      .then(() => {
+        // 代码块8
+        console.log(11);
+      });
+  })
+  .then(() => {
+    // 代码块9
+    console.log(7);
+  });
+```
+
+以上可以解释一下执行顺序
+
+- tick1、**代码块 1**先执行，resolve 了，将**代码块 2**推入 nextTick，`打印1`
+- tick2、**代码块 2**执行，`打印2`，创建 Promise，resolve 了所以将**代码块 3**推入 nextTick，`打印3`；往下走，Promise.resolve 创建了一个 fulfilled 的 Promise，所以**代码块 7**推入 nextTick，执行完毕**代码块 2**，所以**代码块 9**被推入 nextTick
+- tick3、**代码块 3**执行，`打印4`，创建 Promise，resolve 了将**代码块 4**推入 nextTick，`打印5`，执行完 then 所以将下一个 then 的**代码块 5**推入 nextTick；然后**代码块 7**执行，`打印6`，执行完所以将下一个 then 的**代码块 8**推入 nextTick；执行**代码块 9**，`打印7`
+- tick4、**代码块 4**执行，`打印8`；**代码块 5**执行，`打印9`，创建新 Promise，resolve 了所以将**代码块 6**推入 nextTick，`打印10`；**代码块 8**执行，`打印11`
+- tick5、**代码块 6**执行，`打印12`

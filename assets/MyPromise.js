@@ -202,9 +202,12 @@ class MyPromise {
 }
 
 const resolvePromise = (newPromise, result, resolve, reject) => {
-  // 规范2.3.1，避免循环引用
+  /**
+   * 规范2.3.1，避免循环引用
+   * e.g. const p = Promise.resolve().then(() => p);
+   */
   if (newPromise === result) {
-    return reject(new TypeError('Circular reference'));
+    return reject(new TypeError('Chaining cycle detected for promise'));
   }
   /**
    * 用来判断resolvePormise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
