@@ -903,26 +903,3 @@ export function queueWatcher(watcher: Watcher) {
 4. 到这里初次渲染绑定依赖完成。
 5. 更改数据触发数据观察者内的 setter 调用 dep.notify，通知 dep 内所有 wathcer。
 6. watcher 更新，这时候就是重复上面第 2 步的步骤了。
-
-```mermaid
-graph TB
-    start[new Vue] --new Observer 劫持数据--> Observer{Observer}
-    start[new Vue] --new Watcher 渲染视图--> Watcher{Watcher}
-    Observer --> defineProperty[Object.defineProperty]
-    Observer --new Dep 管理依赖--> Dep{Dep}
-    Dep --> depTarget[Dep.target]
-    defineProperty -- getter 依赖收集 --> depDepend[dep.depend]
-    defineProperty -- setter 通知更新 --> depNotify[dep.notify]
-    Dep --> depDepend
-    Dep --> depNotify
-    Watcher --> watcherGet[watcher.get]
-    Watcher --> watcherUpdate[watcher.update]
-    watcherGet --获取时挂在上去--> depTarget
-    watcherGet --渲染视图--> render[render]
-    watcherUpdate --更新视图--> render[render]
-    depNotify --更新依赖的视图--> watcherUpdate
-    depDepend --将Dep.target上的watcher收集到自己身上--> depTarget
-    render--渲染模板触发获取data--> depDepend
-```
-
-（图贼丑）
