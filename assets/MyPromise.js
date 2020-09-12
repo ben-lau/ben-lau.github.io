@@ -117,12 +117,22 @@ class MyPromise {
   }
 
   static resolve(value) {
-    return new MyPromise(resolve => {
-      resolve(value);
-    });
+    /**
+     * 这里是因为Promise.resolve内Promise对象，
+     * 将会以传入的Promise为准，即使传入的是Promise.reject，
+     * 也会返回一个rejected的Promise对象
+     */
+    let result;
+    return (result = new MyPromise((resolve, reject) => {
+      resolvePromise(result, value, resolve, reject);
+    }));
   }
 
   static reject(value) {
+    /**
+     * Promise.reject则会直接创造一个rejected的Promise，
+     * 无论内部是否为Promise对象
+     */
     return new MyPromise((resolve, reject) => {
       reject(value);
     });

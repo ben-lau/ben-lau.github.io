@@ -497,3 +497,41 @@ new Promise(res => {
 - tick3、**代码块 3**执行，`打印4`，创建 Promise，resolve 了将**代码块 4**推入 nextTick，`打印5`，执行完 then 所以将下一个 then 的**代码块 5**推入 nextTick；然后**代码块 7**执行，`打印6`，执行完所以将下一个 then 的**代码块 8**推入 nextTick；执行**代码块 9**，`打印7`
 - tick4、**代码块 4**执行，`打印8`；**代码块 5**执行，`打印9`，创建新 Promise，resolve 了所以将**代码块 6**推入 nextTick，`打印10`；**代码块 8**执行，`打印11`
 - tick5、**代码块 6**执行，`打印12`
+
+---
+
+###一些坑
+
+```javascript
+Promise.reject(
+  new Promise((res, rej) => {
+    setTimeout(() => {
+      rej(133222);
+      res(444);
+    }, 2000);
+  })
+)
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs))
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs));
+```
+
+这里很容易理解，会**立刻**执行第二个 catch 和第三个 then，打印 pending 中的 Promise 对象和 undefined，因为 Promise.reject 会创建一个已 rejected 的 Promise 对象，value 为传入的值。
+
+```javascript
+Promise.resolve(
+  new Promise((res, rej) => {
+    setTimeout(() => {
+      rej(133222);
+      res(444);
+    }, 2000);
+  })
+)
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs))
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs));
+```
+
+但是这里就不一样了，会**等待 2 秒**后，但是还是第二个 catch 和第三个 then。因为 Promise.resolve 如果传入的是 Promise 对象，则返回以此为准。
