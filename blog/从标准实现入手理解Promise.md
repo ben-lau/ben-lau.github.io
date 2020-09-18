@@ -84,6 +84,119 @@ request('.index')
 这里就不详细列举了，详细可以参考 es6 入门中的[Promise 章](https://es6.ruanyifeng.com/#docs/promise)。
 下面会默认读者已清楚了解 Promise 的 api。
 
+### 在开始前...
+
+是否能说清楚下面打印的是什么，而且说出思路么？
+
+1.
+
+```javascript
+new Promise(res => {
+  res();
+  console.log(1);
+  // 代码块1
+})
+  .then(() => {
+    // 代码块2
+    console.log(2);
+    new Promise(res => {
+      res();
+      console.log(3);
+    })
+      .then(() => {
+        // 代码块3
+        console.log(4);
+        new Promise(res => {
+          res();
+          console.log(5);
+        }).then(() => {
+          // 代码块4
+          console.log(8);
+        });
+      })
+      .then(() => {
+        // 代码块5
+        console.log(9);
+        new Promise(res => {
+          res();
+          console.log(10);
+        }).then(() => {
+          // 代码块6
+          console.log(12);
+        });
+      });
+    Promise.resolve()
+      .then(() => {
+        // 代码块7
+        console.log(6);
+      })
+      .then(() => {
+        // 代码块8
+        console.log(11);
+      });
+  })
+  .then(() => {
+    // 代码块9
+    console.log(7);
+  });
+```
+
+2.
+
+```javascript
+Promise.reject(
+  new Promise((res, rej) => {
+    setTimeout(() => {
+      rej(133222);
+      res(444);
+    }, 2000);
+  })
+)
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs))
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs));
+```
+
+3.
+
+```javascript
+Promise.resolve(
+  new Promise((res, rej) => {
+    setTimeout(() => {
+      rej(133222);
+      res(444);
+    }, 2000);
+  })
+)
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs))
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs));
+```
+
+4.
+
+```javascript
+new Promise((res, rej) => {
+  res(Promise.reject(123));
+})
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs));
+```
+
+5.
+
+```javascript
+new Promise((res, rej) => {
+  rej(Promise.resolve(123));
+})
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs));
+```
+
+可以自己尝试思考再去控制台尝试，如果回答不上就应该往下看啦
+
 ### Promise 规范
 
 关于 Promise 的规范最早是由 commonjs 社区提出，毕竟多人接收的就是[Promise/A](http://wiki.commonjs.org/wiki/Promises/A)，后面因规范较为简单所以在这基础上提出了[Promise/A+](https://promisesaplus.com/#point-27)，这也是业界和 ES6 使用的标准，而 ES6 在这标准上还新增了 Promise.resolve、Promise.reject、Promise.all、Promise.race、Promise.prototype.catch、Promise.allSettled、Promise.prototype.finally 等方法。
@@ -157,28 +270,39 @@ class MyPromise {
   status = STATUS.PENDING; // 初始化状态为等待中
   resolveQueue = []; // 完成回调队列
   rejectQueue = []; // 拒绝回调队列
-  value = undefined; // 完成的值
-  reason = undefined; // 拒绝的理由
+  value = void 0; // 完成的值
+  reason = void 0; // 拒绝的理由
 
   constructor(executor) {
     const resolve = value => {
+      // 只有在等待中的状态才可以resolve
       if (this.status === STATUS.PENDING) {
-        // 只有在等待中的状态才可以resolve
-        queueMicrotask(() => {
-          // 当然这里可以用setTimeout模拟，只不过这个才是真正的创建了微任务
-          this.status = STATUS.FULFILLED; // 修改状态
-          this.value = value; // 保存值
-          while (this.resolveQueue.length) {
-            const callback = this.resolveQueue.shift();
-            callback(value); // 一个个执行
-          }
-        });
+        try {
+          // 如果传入resolve内的为thenable对象，则以它的状态为准
+          resolvePromise(this, value, realResolve, reject);
+        } catch (err) {
+          reject(err);
+        }
       }
     };
+
+    const realResolve = value => {
+      // 只有在等待中的状态才可以resolve
+      nextTaskQueue(() => {
+        // 真正的创建了微任务的封装
+        this.status = STATUS.FULFILLED; // 修改状态
+        this.value = value; // 保存值
+        while (this.resolveQueue.length) {
+          const callback = this.resolveQueue.shift();
+          callback(value); // 一个个执行
+        }
+      });
+    };
+
     const reject = reason => {
       // 与resolve一致，只是修改的状态和保存的理由以及执行的队列不一样
       if (this.status === STATUS.PENDING) {
-        queueMicrotask(() => {
+        nextTaskQueue(() => {
           this.status = STATUS.REJECTED;
           this.reason = reason;
           while (this.rejectQueue.length) {
@@ -217,13 +341,13 @@ class MyPromise {
           };
     return new MyPromise((resolve, reject) => {
       if (this.status === STATUS.FULFILLED) {
-        queueMicrotask(() => {
+        nextTaskQueue(() => {
           // 即使Promise对象是已完成，也不会立刻执行
           const result = onFulfilled(this.value); // 传入的回调可以获取值
           resolve(result);
         });
       } else if (this.status === STATUS.REJECTED) {
-        queueMicrotask(() => {
+        nextTaskQueue(() => {
           // 即使Promise对象是已拒绝，也不会立刻执行
           const result = onRejected(this.reason); // 传入的回调可以拒绝理由
           reject(result);
@@ -324,7 +448,7 @@ then(onFulfilled, onRejected) {
   let newPromise;
   return (newPromise = new MyPromise((resolve, reject) => {
     if (this.status === STATUS.FULFILLED) {
-      queueMicrotask(() => {
+      nextTaskQueue(() => {
         // 即使Promise对象是已完成，也不会立刻执行
         try {
           const result = onFulfilled(this.value); // 传入的回调可以获取值
@@ -334,7 +458,7 @@ then(onFulfilled, onRejected) {
         }
       });
     } else if (this.status === STATUS.REJECTED) {
-      queueMicrotask(() => {
+      nextTaskQueue(() => {
         // 即使Promise对象是已拒绝，也不会立刻执行
         try {
           const result = onRejected(this.reason); // 传入的回调可以拒绝理由
@@ -435,7 +559,7 @@ const loading = (title = '加载中..') => {
 
 ---
 
-### 问题
+### 最后
 
 在了解了源码后，其实可以延伸出一些 Promise 执行顺序的问题
 
@@ -500,8 +624,6 @@ new Promise(res => {
 
 ---
 
-###一些坑
-
 ```javascript
 Promise.reject(
   new Promise((res, rej) => {
@@ -534,4 +656,26 @@ Promise.resolve(
   .catch(rs => console.log('catch', rs));
 ```
 
-但是这里就不一样了，会**等待 2 秒**后，但是还是第二个 catch 和第三个 then。因为 Promise.resolve 如果传入的是 Promise 对象，则返回以此为准。
+但是这里就不一样了，会**等待 2 秒**后，但是还是第二个 catch 和第三个 then。因为 Promise.resolve 如果传入的是 `thenable` 对象，则返回以此为准。
+
+---
+
+```javascript
+new Promise((res, rej) => {
+  res(Promise.reject(123));
+})
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs));
+```
+
+这里会以为调用 then，因为调用了内部的 resolve 方法，其实不然，这里会走 catch 回调并且打印 catch 和 123，因为 resolve 内如果传入 `thenable` 对象则会一次为准
+
+```javascript
+new Promise((res, rej) => {
+  rej(Promise.resolve(123));
+})
+  .then(rs => console.log('then', rs))
+  .catch(rs => console.log('catch', rs));
+```
+
+而 reject 则不会。

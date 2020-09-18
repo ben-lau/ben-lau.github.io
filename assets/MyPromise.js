@@ -4,35 +4,81 @@ const STATUS = {
   REJECTED: 'rejected', // 已拒绝
 };
 
+// 判断是否原生方法
+const isNativeFunction = Ctor =>
+  typeof Ctor === 'function' && /native code/.test(Ctor.toString());
+
+// 推入微任务队列
+const nextTaskQueue = cb => {
+  if (
+    typeof queueMicrotask !== 'undefined' &&
+    isNativeFunction(queueMicrotask)
+  ) {
+    queueMicrotask(cb);
+  } else if (
+    typeof MutationObserver !== 'undefined' &&
+    (isNativeFunction(MutationObserver) ||
+      MutationObserver.toString() === '[object MutationObserverConstructor]')
+  ) {
+    const observer = new MutationObserver(cb);
+    const node = document.createTextNode('1');
+    observer.observe(node, {
+      characterData: true,
+    });
+    node.data = '2';
+  } else if (
+    typeof process !== 'undefined' &&
+    typeof process.nextTick === 'function'
+  ) {
+    process.nextTick(cb);
+  } else {
+    setTimeout(() => {
+      cb();
+    }, 0);
+  }
+};
+
 class MyPromise {
   status = STATUS.PENDING; // 初始化状态为等待中
   resolveQueue = []; // 完成回调队列
   rejectQueue = []; // 拒绝回调队列
-  value = undefined; // 完成的值
-  reason = undefined; // 拒绝的理由
+  value = void 0; // 完成的值
+  reason = void 0; // 拒绝的理由
 
   constructor(executor) {
     if (typeof executor !== 'function') {
       throw TypeError('MyPromise executor is not a function');
     }
+
     const resolve = value => {
+      // 只有在等待中的状态才可以resolve
       if (this.status === STATUS.PENDING) {
-        // 只有在等待中的状态才可以resolve
-        queueMicrotask(() => {
-          // 当然这里可以用setTimeout模拟，只不过这个才是真正的创建了微任务
-          this.status = STATUS.FULFILLED; // 修改状态
-          this.value = value; // 保存值
-          while (this.resolveQueue.length) {
-            const callback = this.resolveQueue.shift();
-            callback(value); // 一个个执行
-          }
-        });
+        try {
+          // 如果传入resolve内的为thenable对象，则以它的状态为准
+          resolvePromise(this, value, realResolve, reject);
+        } catch (err) {
+          reject(err);
+        }
       }
     };
+
+    const realResolve = value => {
+      // 只有在等待中的状态才可以resolve
+      nextTaskQueue(() => {
+        // 真正的创建了微任务的封装
+        this.status = STATUS.FULFILLED; // 修改状态
+        this.value = value; // 保存值
+        while (this.resolveQueue.length) {
+          const callback = this.resolveQueue.shift();
+          callback(value); // 一个个执行
+        }
+      });
+    };
+
     const reject = reason => {
       // 与resolve一致，只是修改的状态和保存的理由以及执行的队列不一样
       if (this.status === STATUS.PENDING) {
-        queueMicrotask(() => {
+        nextTaskQueue(() => {
           this.status = STATUS.REJECTED;
           this.reason = reason;
           while (this.rejectQueue.length) {
@@ -42,6 +88,7 @@ class MyPromise {
         });
       }
     };
+
     try {
       executor(resolve, reject); // 实例化即刻执行
     } catch (err) {
@@ -61,7 +108,7 @@ class MyPromise {
     let newPromise;
     return (newPromise = new MyPromise((resolve, reject) => {
       if (this.status === STATUS.FULFILLED) {
-        queueMicrotask(() => {
+        nextTaskQueue(() => {
           // 即使Promise对象是已完成，也不会立刻执行
           try {
             const result = onFulfilled(this.value); // 传入的回调可以获取值
@@ -71,7 +118,7 @@ class MyPromise {
           }
         });
       } else if (this.status === STATUS.REJECTED) {
-        queueMicrotask(() => {
+        nextTaskQueue(() => {
           // 即使Promise对象是已拒绝，也不会立刻执行
           try {
             const result = onRejected(this.reason); // 传入的回调可以拒绝理由
