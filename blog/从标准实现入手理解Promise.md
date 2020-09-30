@@ -491,12 +491,12 @@ then(onFulfilled, onRejected) {
 ```
 
 最后加入上面说的测试导出，跑一次测试即可
-![测试结果](https://raw.githubusercontent.com/ben-lau/blog/master/assets/promise.png)
+![测试结果](https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/promise.png)
 827 个测试项全通过~！
 
 剩下的可以增加一些 api 实现和判断即可
 
-**[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/MyPromise.js)**
+**[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/script/MyPromise.js)**
 
 ### tips
 

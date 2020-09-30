@@ -12,4 +12,6 @@
 
 3、[《前端代码规范》](https://github.com/ben-lau/blog/blob/master/blog/前端代码规范.md)
 
+4、[《不准确的定时器》](https://github.com/ben-lau/blog/blob/master/blog/不准确的定时器.md)
+
 ---
