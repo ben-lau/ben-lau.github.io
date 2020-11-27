@@ -256,6 +256,27 @@ class MyPromise {
       });
     });
   }
+
+  static any(promiseList) {
+    let errorCount = 0;
+    const errorResultList = [];
+    return new Promise((resolve, reject) => {
+      promiseList.forEach((p, index) => {
+        p.then(
+          value => {
+            resolve(value);
+          },
+          reason => {
+            errorCount++;
+            errorResultList[index] = reason;
+            if (errorCount === promiseList.length) {
+              reject(errorResultList);
+            }
+          }
+        );
+      });
+    });
+  }
 }
 
 const resolvePromise = (newPromise, result, resolve, reject) => {
