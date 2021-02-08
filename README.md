@@ -16,4 +16,8 @@
 
 5、[《301、302、303、307、308》](https://github.com/ben-lau/blog/blob/master/blog/301、302、303、307、308.md)
 
+6、[《执行上下文和作用域》](https://github.com/ben-lau/blog/blob/master/blog/执行上下文和作用域.md)
+
+7、[《变量提升和函数声明提升.md》](https://github.com/ben-lau/blog/blob/master/blog/变量提升和函数声明提升.md.md)
+
 ---
