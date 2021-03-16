@@ -39,11 +39,10 @@ const nextTaskQueue = cb => {
 };
 
 class MyPromise {
-  status = STATUS.PENDING; // 初始化状态为等待中
-  resolveQueue = []; // 完成回调队列
-  rejectQueue = []; // 拒绝回调队列
-  value = void 0; // 完成的值
-  reason = void 0; // 拒绝的理由
+  _resolveQueue = []; // 完成回调队列
+  _rejectQueue = []; // 拒绝回调队列
+  result = void 0; // 完成的值
+  state = STATUS.PENDING; // 初始化状态为等待中
 
   constructor(executor) {
     if (typeof executor !== 'function') {
@@ -52,7 +51,7 @@ class MyPromise {
 
     const resolve = value => {
       // 只有在等待中的状态才可以resolve
-      if (this.status === STATUS.PENDING) {
+      if (this.state === STATUS.PENDING) {
         try {
           // 如果传入resolve内的为thenable对象，则以它的状态为准
           resolvePromise(this, value, realResolve, reject);
@@ -64,12 +63,12 @@ class MyPromise {
 
     const realResolve = value => {
       // 只有在等待中的状态才可以resolve
+      // 真正的创建了微任务的封装
+      this.state = STATUS.FULFILLED; // 修改状态
+      this.result = value; // 保存值
       nextTaskQueue(() => {
-        // 真正的创建了微任务的封装
-        this.status = STATUS.FULFILLED; // 修改状态
-        this.value = value; // 保存值
-        while (this.resolveQueue.length) {
-          const callback = this.resolveQueue.shift();
+        while (this._resolveQueue.length) {
+          const callback = this._resolveQueue.shift();
           callback(value); // 一个个执行
         }
       });
@@ -77,12 +76,12 @@ class MyPromise {
 
     const reject = reason => {
       // 与resolve一致，只是修改的状态和保存的理由以及执行的队列不一样
-      if (this.status === STATUS.PENDING) {
+      if (this.state === STATUS.PENDING) {
+        this.state = STATUS.REJECTED;
+        this.result = reason;
         nextTaskQueue(() => {
-          this.status = STATUS.REJECTED;
-          this.reason = reason;
-          while (this.rejectQueue.length) {
-            const callback = this.rejectQueue.shift(); // 获取拒绝回调队列
+          while (this._rejectQueue.length) {
+            const callback = this._rejectQueue.shift(); // 获取拒绝回调队列
             callback(reason);
           }
         });
@@ -107,39 +106,39 @@ class MyPromise {
           };
     let newPromise;
     return (newPromise = new MyPromise((resolve, reject) => {
-      if (this.status === STATUS.FULFILLED) {
+      if (this.state === STATUS.FULFILLED) {
         nextTaskQueue(() => {
           // 即使Promise对象是已完成，也不会立刻执行
           try {
-            const result = onFulfilled(this.value); // 传入的回调可以获取值
+            const result = onFulfilled(this.result); // 传入的回调可以获取值
             resolvePromise(newPromise, result, resolve, reject);
           } catch (err) {
             reject(err);
           }
         });
-      } else if (this.status === STATUS.REJECTED) {
+      } else if (this.state === STATUS.REJECTED) {
         nextTaskQueue(() => {
           // 即使Promise对象是已拒绝，也不会立刻执行
           try {
-            const result = onRejected(this.reason); // 传入的回调可以拒绝理由
+            const result = onRejected(this.result); // 传入的回调可以拒绝理由
             resolvePromise(newPromise, result, resolve, reject);
           } catch (err) {
             reject(err);
           }
         });
-      } else if (this.status === STATUS.PENDING) {
+      } else if (this.state === STATUS.PENDING) {
         // 如果是等待中，则分别推入回调队列中
-        this.resolveQueue.push(() => {
+        this._resolveQueue.push(() => {
           try {
-            const result = onFulfilled(this.value);
+            const result = onFulfilled(this.result);
             resolvePromise(newPromise, result, resolve, reject);
           } catch (err) {
             reject(err);
           }
         });
-        this.rejectQueue.push(() => {
+        this._rejectQueue.push(() => {
           try {
-            const result = onRejected(this.reason);
+            const result = onRejected(this.result);
             resolvePromise(newPromise, result, resolve, reject);
           } catch (err) {
             reject(err);
@@ -169,10 +168,13 @@ class MyPromise {
      * 将会以传入的Promise为准，即使传入的是Promise.reject，
      * 也会返回一个rejected的Promise对象
      */
-    let result;
-    return (result = new MyPromise((resolve, reject) => {
-      resolvePromise(result, value, resolve, reject);
-    }));
+    if (value instanceof MyPromise) {
+      return value;
+    } else {
+      return new MyPromise(resolve => {
+        resolve(value);
+      });
+    }
   }
 
   static reject(value) {
@@ -180,7 +182,7 @@ class MyPromise {
      * Promise.reject则会直接创造一个rejected的Promise，
      * 无论内部是否为Promise对象
      */
-    return new MyPromise((resolve, reject) => {
+    return new MyPromise((_, reject) => {
       reject(value);
     });
   }

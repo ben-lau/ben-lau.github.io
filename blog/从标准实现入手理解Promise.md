@@ -195,6 +195,14 @@ new Promise((res, rej) => {
   .catch(rs => console.log('catch', rs));
 ```
 
+6.
+
+```javascript
+new Promise(res => res(Promise.resolve())).then(() => console.log(2));
+
+Promise.resolve().then(() => console.log(1));
+```
+
 可以自己尝试思考再去控制台尝试，如果回答不上就应该往下看啦
 
 ### Promise 规范
@@ -267,16 +275,15 @@ const STATUS = {
 };
 
 class MyPromise {
-  status = STATUS.PENDING; // 初始化状态为等待中
-  resolveQueue = []; // 完成回调队列
-  rejectQueue = []; // 拒绝回调队列
-  value = void 0; // 完成的值
-  reason = void 0; // 拒绝的理由
+  _resolveQueue = []; // 完成回调队列
+  _rejectQueue = []; // 拒绝回调队列
+  result = void 0; // 完成的值
+  state = STATUS.PENDING; // 初始化状态为等待中
 
   constructor(executor) {
     const resolve = value => {
       // 只有在等待中的状态才可以resolve
-      if (this.status === STATUS.PENDING) {
+      if (this.state === STATUS.PENDING) {
         try {
           // 如果传入resolve内的为thenable对象，则以它的状态为准
           resolvePromise(this, value, realResolve, reject);
@@ -288,12 +295,12 @@ class MyPromise {
 
     const realResolve = value => {
       // 只有在等待中的状态才可以resolve
+      this.state = STATUS.FULFILLED; // 修改状态
+      this.result = value; // 保存值
+      // 真正的创建了微任务的封装
       nextTaskQueue(() => {
-        // 真正的创建了微任务的封装
-        this.status = STATUS.FULFILLED; // 修改状态
-        this.value = value; // 保存值
-        while (this.resolveQueue.length) {
-          const callback = this.resolveQueue.shift();
+        while (this._resolveQueue.length) {
+          const callback = this._resolveQueue.shift();
           callback(value); // 一个个执行
         }
       });
@@ -301,17 +308,18 @@ class MyPromise {
 
     const reject = reason => {
       // 与resolve一致，只是修改的状态和保存的理由以及执行的队列不一样
-      if (this.status === STATUS.PENDING) {
+      if (this.state === STATUS.PENDING) {
+        this.state = STATUS.REJECTED;
+        this.result = reason;
         nextTaskQueue(() => {
-          this.status = STATUS.REJECTED;
-          this.reason = reason;
-          while (this.rejectQueue.length) {
-            const callback = this.rejectQueue.shift(); // 获取拒绝回调队列
+          while (this._rejectQueue.length) {
+            const callback = this._rejectQueue.shift(); // 获取拒绝回调队列
             callback(reason);
           }
         });
       }
     };
+
     try {
       executor(resolve, reject); // 实例化即刻执行
     } catch (err) {
@@ -340,26 +348,26 @@ class MyPromise {
             throw reason;
           };
     return new MyPromise((resolve, reject) => {
-      if (this.status === STATUS.FULFILLED) {
+      if (this.state === STATUS.FULFILLED) {
         nextTaskQueue(() => {
           // 即使Promise对象是已完成，也不会立刻执行
-          const result = onFulfilled(this.value); // 传入的回调可以获取值
+          const result = onFulfilled(this.result); // 传入的回调可以获取值
           resolve(result);
         });
-      } else if (this.status === STATUS.REJECTED) {
+      } else if (this.state === STATUS.REJECTED) {
         nextTaskQueue(() => {
           // 即使Promise对象是已拒绝，也不会立刻执行
-          const result = onRejected(this.reason); // 传入的回调可以拒绝理由
+          const result = onRejected(this.result); // 传入的回调可以拒绝理由
           reject(result);
         });
-      } else if (this.status === STATUS.PENDING) {
+      } else if (this.state === STATUS.PENDING) {
         // 如果是等待中，则分别推入回调队列中
-        this.resolveQueue.push(() => {
-          const result = onFulfilled(this.value);
+        this._resolveQueue.push(() => {
+          const result = onFulfilled(this.result);
           resolve(result);
         });
-        this.rejectQueue.push(() => {
-          const result = onRejected(this.reason);
+        this._rejectQueue.push(() => {
+          const result = onRejected(this.result);
           reject(result);
         });
       }
@@ -381,7 +389,7 @@ const resolvePromise = (newPromise, result, resolve, reject) => {
     return reject(new TypeError('Chaining cycle detected for promise'));
   }
   /**
-   * 用来判断resolvePormise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
+   * 用来判断resolvePromise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
    * 在一些返回thenable对象中，连续调用多次回调的情况
    * e.g. then(() => {
    *        return {
@@ -447,40 +455,40 @@ then(onFulfilled, onRejected) {
         };
   let newPromise;
   return (newPromise = new MyPromise((resolve, reject) => {
-    if (this.status === STATUS.FULFILLED) {
+    if (this.state === STATUS.FULFILLED) {
       nextTaskQueue(() => {
         // 即使Promise对象是已完成，也不会立刻执行
         try {
-          const result = onFulfilled(this.value); // 传入的回调可以获取值
-          resolvePormise(newPromise, result, resolve, reject);
+          const result = onFulfilled(this.result); // 传入的回调可以获取值
+          resolvePromise(newPromise, result, resolve, reject);
         } catch (err) {
           reject(err);
         }
       });
-    } else if (this.status === STATUS.REJECTED) {
+    } else if (this.state === STATUS.REJECTED) {
       nextTaskQueue(() => {
         // 即使Promise对象是已拒绝，也不会立刻执行
         try {
-          const result = onRejected(this.reason); // 传入的回调可以拒绝理由
-          resolvePormise(newPromise, result, resolve, reject);
+          const result = onRejected(this.result); // 传入的回调可以拒绝理由
+          resolvePromise(newPromise, result, resolve, reject);
         } catch (err) {
           reject(err);
         }
       });
-    } else if (this.status === STATUS.PENDING) {
+    } else if (this.state === STATUS.PENDING) {
       // 如果是等待中，则分别推入回调队列中
-      this.resolveQueue.push(() => {
+      this._resolveQueue.push(() => {
         try {
-          const result = onFulfilled(this.value);
-          resolvePormise(newPromise, result, resolve, reject);
+          const result = onFulfilled(this.result);
+          resolvePromise(newPromise, result, resolve, reject);
         } catch (err) {
           reject(err);
         }
       });
-      this.rejectQueue.push(() => {
+      this._rejectQueue.push(() => {
         try {
-          const result = onRejected(this.reason);
-          resolvePormise(newPromise, result, resolve, reject);
+          const result = onRejected(this.result);
+          resolvePromise(newPromise, result, resolve, reject);
         } catch (err) {
           reject(err);
         }
