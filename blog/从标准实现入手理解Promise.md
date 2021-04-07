@@ -502,9 +502,11 @@ then(onFulfilled, onRejected) {
 ![测试结果](https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/promise.png)
 827 个测试项全通过~！
 
-剩下的可以增加一些 api 实现和判断即可
+---
 
-**[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/script/MyPromise.js)**
+剩下的可以增加一些 api 实现和判断即可。
+
+但是**要注意**的是，静态方法包括 all、race、allSettled、any 等，传入的是任意可迭代对象，包括字符串等，如果传入的迭代对象中的子元素如果非 Promise 对象，则直接返回。
 
 ### tips
 
@@ -687,3 +689,5 @@ new Promise((res, rej) => {
 ```
 
 而 reject 则不会。
+
+## **[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/script/MyPromise.js)**

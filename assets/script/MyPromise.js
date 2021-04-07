@@ -199,8 +199,10 @@ class MyPromise {
     return new MyPromise((resolve, reject) => {
       let resolveCount = 0;
       const resultList = [];
+      // 迭代对象传成数组，所有元素都会进入判断
       const list = [...promiseList];
-      if (list.length === 0) {
+      const length = list.length;
+      if (length === 0) {
         resolve(list);
       } else {
         list.forEach((p, index) => {
@@ -208,7 +210,7 @@ class MyPromise {
             value => {
               resolveCount++;
               resultList[index] = value;
-              if (resolveCount === list.length) {
+              if (resolveCount === length) {
                 resolve(resultList);
               }
             },
@@ -227,7 +229,8 @@ class MyPromise {
     }
     return new MyPromise((resolve, reject) => {
       const list = [...promiseList];
-      if (list.length === 0) {
+      const length = list.length;
+      if (length === 0) {
         resolve(list);
       } else {
         list.forEach(p => {
@@ -252,7 +255,8 @@ class MyPromise {
       let settledCount = 0;
       const resultList = [];
       const list = [...promiseList];
-      if (list.length === 0) {
+      const length = list.length;
+      if (length === 0) {
         resolve(list);
       } else {
         // 根据提案要求，allSettled会在所有promise完成或者拒绝后执行
@@ -268,7 +272,7 @@ class MyPromise {
                 status: STATUS.FULFILLED,
                 value,
               };
-              if (settledCount === list.length) {
+              if (settledCount === length) {
                 resolve(resultList);
               }
             },
@@ -278,7 +282,7 @@ class MyPromise {
                 status: STATUS.REJECTED,
                 reason,
               };
-              if (settledCount === list.length) {
+              if (settledCount === length) {
                 resolve(resultList);
               }
             }
@@ -296,7 +300,8 @@ class MyPromise {
       let errorCount = 0;
       const errorResultList = [];
       const list = [...promiseList];
-      if (list.length === 0) {
+      const length = list.length;
+      if (length === 0) {
         resolve(list);
       } else {
         list.forEach((p, index) => {
@@ -307,7 +312,7 @@ class MyPromise {
             reason => {
               errorCount++;
               errorResultList[index] = reason;
-              if (errorCount === list.length) {
+              if (errorCount === length) {
                 reject(errorResultList);
               }
             }
