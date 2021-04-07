@@ -8,6 +8,11 @@ const STATUS = {
 const isNativeFunction = Ctor =>
   typeof Ctor === 'function' && /native code/.test(Ctor.toString());
 
+// 判断是否可迭代对象
+const isIterable = Ctor =>
+  ((typeof Ctor === 'object' && Ctor !== null) || typeof Ctor === 'string') &&
+  typeof Ctor[Symbol.iterator] === 'function';
+
 // 推入微任务队列
 const nextTaskQueue = cb => {
   if (
@@ -188,95 +193,127 @@ class MyPromise {
   }
 
   static all(promiseList) {
-    let resolveCount = 0;
-    const resultList = [];
+    if (!isIterable(promiseList)) {
+      throw TypeError(`${promiseList} is not iterable`);
+    }
     return new MyPromise((resolve, reject) => {
-      promiseList.forEach((p, index) => {
-        p.then(
-          value => {
-            resolveCount++;
-            resultList[index] = value;
-            if (resolveCount === promiseList.length) {
-              resolve(resultList);
+      let resolveCount = 0;
+      const resultList = [];
+      const list = [...promiseList];
+      if (list.length === 0) {
+        resolve(list);
+      } else {
+        list.forEach((p, index) => {
+          MyPromise.resolve(p).then(
+            value => {
+              resolveCount++;
+              resultList[index] = value;
+              if (resolveCount === list.length) {
+                resolve(resultList);
+              }
+            },
+            reason => {
+              reject(reason);
             }
-          },
-          reason => {
-            reject(reason);
-          }
-        );
-      });
+          );
+        });
+      }
     });
   }
 
   static race(promiseList) {
+    if (!isIterable(promiseList)) {
+      throw TypeError(`${promiseList} is not iterable`);
+    }
     return new MyPromise((resolve, reject) => {
-      promiseList.forEach(p => {
-        p.then(
-          value => {
-            resolve(value);
-          },
-          reason => {
-            reject(reason);
-          }
-        );
-      });
+      const list = [...promiseList];
+      if (list.length === 0) {
+        resolve(list);
+      } else {
+        list.forEach(p => {
+          MyPromise.resolve(p).then(
+            value => {
+              resolve(value);
+            },
+            reason => {
+              reject(reason);
+            }
+          );
+        });
+      }
     });
   }
 
   static allSettled(promiseList) {
-    let settledCount = 0;
-    const resultList = [];
+    if (!isIterable(promiseList)) {
+      throw TypeError(`${promiseList} is not iterable`);
+    }
     return new MyPromise(resolve => {
-      // 根据提案要求，allSettled会在所有promise完成或者拒绝后执行
-      // 一定返回then内，对于每个结果对象，都有一个 status 字符串。如
-      // 果它的值为 fulfilled，则结果对象上存在一个 value 。如果值为
-      // rejected，则存在一个 reason 。value（或 reason ）反映了每
-      // 个 promise 决议（或拒绝）的值。
-      promiseList.forEach((p, index) => {
-        p.then(
-          value => {
-            settledCount++;
-            resultList[index] = {
-              status: STATUS.FULFILLED,
-              value,
-            };
-            if (settledCount === promiseList.length) {
-              resolve(resultList);
+      let settledCount = 0;
+      const resultList = [];
+      const list = [...promiseList];
+      if (list.length === 0) {
+        resolve(list);
+      } else {
+        // 根据提案要求，allSettled会在所有promise完成或者拒绝后执行
+        // 一定返回then内，对于每个结果对象，都有一个 status 字符串。如
+        // 果它的值为 fulfilled，则结果对象上存在一个 value 。如果值为
+        // rejected，则存在一个 reason 。value（或 reason ）反映了每
+        // 个 promise 决议（或拒绝）的值。
+        list.forEach((p, index) => {
+          MyPromise.resolve(p).then(
+            value => {
+              settledCount++;
+              resultList[index] = {
+                status: STATUS.FULFILLED,
+                value,
+              };
+              if (settledCount === list.length) {
+                resolve(resultList);
+              }
+            },
+            reason => {
+              settledCount++;
+              resultList[index] = {
+                status: STATUS.REJECTED,
+                reason,
+              };
+              if (settledCount === list.length) {
+                resolve(resultList);
+              }
             }
-          },
-          reason => {
-            settledCount++;
-            resultList[index] = {
-              status: STATUS.REJECTED,
-              reason,
-            };
-            if (settledCount === promiseList.length) {
-              resolve(resultList);
-            }
-          }
-        );
-      });
+          );
+        });
+      }
     });
   }
 
   static any(promiseList) {
-    let errorCount = 0;
-    const errorResultList = [];
+    if (!isIterable(promiseList)) {
+      throw TypeError(`${promiseList} is not iterable`);
+    }
     return new Promise((resolve, reject) => {
-      promiseList.forEach((p, index) => {
-        p.then(
-          value => {
-            resolve(value);
-          },
-          reason => {
-            errorCount++;
-            errorResultList[index] = reason;
-            if (errorCount === promiseList.length) {
-              reject(errorResultList);
+      let errorCount = 0;
+      const errorResultList = [];
+      const list = [...promiseList];
+      if (list.length === 0) {
+        resolve(list);
+      } else {
+        list.forEach((p, index) => {
+          MyPromise.resolve(p).then(
+            value => {
+              resolve(value);
+            },
+            reason => {
+              errorCount++;
+              errorResultList[index] = reason;
+              if (errorCount === list.length) {
+                reject(errorResultList);
+              }
             }
-          }
-        );
-      });
+          );
+        });
+      }
     });
   }
 }
