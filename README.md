@@ -18,6 +18,6 @@
 
 6、[《执行上下文和作用域》](https://github.com/ben-lau/blog/blob/master/blog/执行上下文和作用域.md)
 
-7、[《变量提升和函数声明提升.md》](https://github.com/ben-lau/blog/blob/master/blog/变量提升和函数声明提升.md.md)
+7、[《变量提升和函数声明提升》](https://github.com/ben-lau/blog/blob/master/blog/变量提升和函数声明提升.md)
 
 ---
