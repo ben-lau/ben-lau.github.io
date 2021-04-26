@@ -4,14 +4,17 @@ const STATUS = {
   REJECTED: 'rejected', // 已拒绝
 };
 
+// 判断是否函数
+const isFunction = target => typeof target === 'function';
+
 // 判断是否原生方法
 const isNativeFunction = Ctor =>
-  typeof Ctor === 'function' && /native code/.test(Ctor.toString());
+  isFunction(Ctor) && /native code/.test(Ctor.toString());
 
 // 判断是否可迭代对象
 const isIterable = Ctor =>
   ((typeof Ctor === 'object' && Ctor !== null) || typeof Ctor === 'string') &&
-  typeof Ctor[Symbol.iterator] === 'function';
+  isFunction(Ctor[Symbol.iterator]);
 
 // 推入微任务队列
 const nextTaskQueue = cb => {
@@ -31,10 +34,7 @@ const nextTaskQueue = cb => {
       characterData: true,
     });
     node.data = '2';
-  } else if (
-    typeof process !== 'undefined' &&
-    typeof process.nextTick === 'function'
-  ) {
+  } else if (typeof process !== 'undefined' && isFunction(process.nextTick)) {
     process.nextTick(cb);
   } else {
     setTimeout(() => {
@@ -50,7 +50,7 @@ class MyPromise {
   state = STATUS.PENDING; // 初始化状态为等待中
 
   constructor(executor) {
-    if (typeof executor !== 'function') {
+    if (!isFunction(executor)) {
       throw TypeError('MyPromise executor is not a function');
     }
 
@@ -101,14 +101,13 @@ class MyPromise {
   }
 
   then(onFulfilled, onRejected) {
-    onFulfilled =
-      typeof onFulfilled === 'function' ? onFulfilled : value => value; // 如果不是函数则传递给下一个
-    onRejected =
-      typeof onRejected === 'function'
-        ? onRejected
-        : reason => {
-            throw reason;
-          };
+    onFulfilled = isFunction(onFulfilled) ? onFulfilled : value => value; // 如果不是函数则传递给下一个
+    onRejected = isFunction(onRejected)
+      ? onRejected
+      : reason => {
+          throw reason;
+        };
+
     let newPromise;
     return (newPromise = new MyPromise((resolve, reject) => {
       if (this.state === STATUS.FULFILLED) {
@@ -223,27 +222,26 @@ class MyPromise {
     });
   }
 
+  /**
+   * 当传入的是空迭代对象，则一直pending
+   * @param {Iterable<any>} promiseList
+   */
   static race(promiseList) {
     if (!isIterable(promiseList)) {
       throw TypeError(`${promiseList} is not iterable`);
     }
     return new MyPromise((resolve, reject) => {
       const list = [...promiseList];
-      const length = list.length;
-      if (length === 0) {
-        resolve(list);
-      } else {
-        list.forEach(p => {
-          MyPromise.resolve(p).then(
-            value => {
-              resolve(value);
-            },
-            reason => {
-              reject(reason);
-            }
-          );
-        });
-      }
+      list.forEach(p => {
+        MyPromise.resolve(p).then(
+          value => {
+            resolve(value);
+          },
+          reason => {
+            reject(reason);
+          }
+        );
+      });
     });
   }
 
@@ -292,28 +290,30 @@ class MyPromise {
     });
   }
 
+  /**
+   * 当传入的是空迭代对象，则直接reject，当所有都是rejected才进入reject
+   * @param {Iterable<any>} promiseList
+   */
   static any(promiseList) {
     if (!isIterable(promiseList)) {
       throw TypeError(`${promiseList} is not iterable`);
     }
-    return new Promise((resolve, reject) => {
+    return new MyPromise((resolve, reject) => {
       let errorCount = 0;
-      const errorResultList = [];
       const list = [...promiseList];
       const length = list.length;
       if (length === 0) {
-        resolve(list);
+        reject('AggregateError: All promises were rejected');
       } else {
-        list.forEach((p, index) => {
+        list.forEach(p => {
           MyPromise.resolve(p).then(
             value => {
               resolve(value);
             },
-            reason => {
+            () => {
               errorCount++;
-              errorResultList[index] = reason;
               if (errorCount === length) {
-                reject(errorResultList);
+                reject('AggregateError: All promises were rejected');
               }
             }
           );
@@ -326,7 +326,7 @@ class MyPromise {
 const resolvePromise = (newPromise, result, resolve, reject) => {
   /**
    * 规范2.3.1，避免循环引用
-   * e.g. const p = Promise.resolve().then(() => p);
+   * e.g. const p = MyPromise.resolve().then(() => p);
    */
   if (newPromise === result) {
     return reject(new TypeError('Chaining cycle detected for promise'));
@@ -345,13 +345,10 @@ const resolvePromise = (newPromise, result, resolve, reject) => {
    * 网上大部分的都没说这个情况到底是什么
    */
   let called = false;
-  if (
-    result !== null &&
-    (typeof result === 'object' || typeof result === 'function')
-  ) {
+  if (result !== null && (typeof result === 'object' || isFunction(result))) {
     try {
       const { then } = result;
-      if (typeof then === 'function') {
+      if (isFunction(then)) {
         // 规范2.3.3.3 如果result是个thenable对象，则调用其then方法，当他是Promise
         then.call(
           result,
@@ -382,3 +379,15 @@ const resolvePromise = (newPromise, result, resolve, reject) => {
     resolve(result);
   }
 };
+
+// // 测试
+// MyPromise.defer = MyPromise.deferred = function () {
+//   let dfd = {};
+//   dfd.promise = new MyPromise((resolve, reject) => {
+//     dfd.resolve = resolve;
+//     dfd.reject = reject;
+//   });
+//   return dfd;
+// };
+
+// module.exports = MyPromise;
