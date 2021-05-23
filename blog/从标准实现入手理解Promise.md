@@ -1,12 +1,25 @@
 # 从标准实现入手理解 Promise
 
-### 什么是 Promise
+## 为什么写这篇
+
+网上解释已经一抓一大把，但是个人觉得大部分文章可以实现 Promise/A+，但是对真实细节没完全实现：
+
+- 真正的 microtask（大部分用的 setTimeout 代替）
+- then 传入回调函数返回 Promise 对象的情况
+- 构造函数 executor 的细节，以及 executor 的 resolve 参数传入 Promise 对象的情况
+- Promise.resolve 传入 Promise 对象的情况
+- Promise 各种静态函数传入的是可迭代对象而非数组
+- 介绍清楚循环调用阻止的情况和多次 resolve 阻止的情况
+
+本人用自己浅薄的知识尝试去覆盖最真实的 Promise 所有实现情况，并且用纯 js 实现，从中理解到真正的 Promise 是怎么样的。
+
+## 什么是 Promise
 
 `Promise` 是异步编程的一种解决方案，比传统的解决方案回调函数和事件更合理和更强大。它由社区最早提出和实现，ES6 将其写进了语言标准，统一了用法，原生提供了`Promise`对象。
 
 所谓`Promise`，简单说就是一个容器，里面保存着某个未来才会结束的事件（通常是一个异步操作）的结果。从语法上说，`Promise` 是一个对象，从它可以获取异步操作的消息。`Promise` 提供统一的 API，各种异步操作都可以用同样的方法进行处理，**并非只能解决读取接口这种异步操作**。
 
-### 在此之前如何解决异步操作
+## 在此之前如何解决异步操作
 
 在 Promise 出现之前其实也有出现了类 Promise 的库，例如[Q](https://github.com/kriskowal/q)和[JQuery](https://github.com/jquery/jquery)Deferred 等。但是通用的解决方案就是回调函数。
 
@@ -71,7 +84,7 @@ request('.index')
 
 整个代码就清晰易懂而且优雅简洁。
 
-### Promise 特点
+## Promise 特点
 
 `Promise`对象有以下两个特点。
 
@@ -79,12 +92,12 @@ request('.index')
 
 （2）**一旦状态改变，就不会再变，任何时候都可以得到这个结果**。`Promise`对象的状态改变，只有两种可能：从 pending 变为 fulfilled 和从 pending 变为 rejected。只要这两种情况发生，状态就凝固了，不会再变了，会一直保持这个结果，这时就称为 resolved（已定型）。如果改变已经发生了，你再对`Promise`对象添加回调函数，也会立即得到这个结果。这与事件（Event）完全不同，事件的特点是，如果你错过了它，再去监听，是得不到结果的。
 
-### Promise 的 api 和用法
+## Promise 的 api 和用法
 
 这里就不详细列举了，详细可以参考 es6 入门中的[Promise 章](https://es6.ruanyifeng.com/#docs/promise)。
 下面会默认读者已清楚了解 Promise 的 api。
 
-### 在开始前...
+## 在开始前...
 
 是否能说清楚下面打印的是什么，而且说出思路么？
 
@@ -200,12 +213,39 @@ new Promise((res, rej) => {
 ```javascript
 new Promise(res => res(Promise.resolve())).then(() => console.log(2));
 
-Promise.resolve().then(() => console.log(1));
+Promise.resolve(Promise.resolve()).then(() => console.log(1));
+```
+
+7.
+
+```javascript
+Promise.resolve()
+  .then(() => {
+    console.log(1);
+    return Promise.resolve(5);
+  })
+  .then(r => {
+    console.log(r);
+  });
+
+Promise.resolve()
+  .then(() => {
+    console.log(2);
+  })
+  .then(() => {
+    console.log(3);
+  })
+  .then(() => {
+    console.log(4);
+  })
+  .then(() => {
+    console.log(6);
+  });
 ```
 
 可以自己尝试思考再去控制台尝试，如果回答不上就应该往下看啦
 
-### Promise 规范
+## Promise 规范
 
 关于 Promise 的规范最早是由 commonjs 社区提出，毕竟多人接收的就是[Promise/A](http://wiki.commonjs.org/wiki/Promises/A)，后面因规范较为简单所以在这基础上提出了[Promise/A+](https://promisesaplus.com/#point-27)，这也是业界和 ES6 使用的标准，而 ES6 在这标准上还新增了 Promise.resolve、Promise.reject、Promise.all、Promise.race、Promise.prototype.catch、Promise.allSettled、Promise.prototype.finally 等方法。
 
@@ -233,7 +273,7 @@ npm install -g promises-aplus-tests
 promises-aplus-tests MyPromise.js
 ```
 
-### Promise 结构
+## Promise 结构
 
 可以从日常使用 Promise 中了解到，Promise 需要 new 出实例，并且传入回调函数，而回调函数接收两个参数（resolve、reject），回调函数会立刻执行。返回的 Promise 实例中可调用 then 或者 catch 接收完成和错误。
 
@@ -383,13 +423,13 @@ class MyPromise {
 const resolvePromise = (newPromise, result, resolve, reject) => {
   /**
    * 规范2.3.1，避免循环引用
-   * e.g. const p = Promise.resolve().then(() => p);
+   * e.g. const p = MyPromise.resolve().then(() => p);
    */
   if (newPromise === result) {
     return reject(new TypeError('Chaining cycle detected for promise'));
   }
   /**
-   * 用来判断resolvePromise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
+   * 用来判断resolvePormise是否已经执行过了，如果执行过resolve或者reject就不要再往下走resolve或者reject
    * 在一些返回thenable对象中，连续调用多次回调的情况
    * e.g. then(() => {
    *        return {
@@ -402,26 +442,28 @@ const resolvePromise = (newPromise, result, resolve, reject) => {
    * 网上大部分的都没说这个情况到底是什么
    */
   let called = false;
-  if (
-    result !== null &&
-    (typeof result === 'object' || typeof result === 'function')
-  ) {
+  if (result !== null && (typeof result === 'object' || isFunction(result))) {
     try {
       const { then } = result;
-      if (typeof then === 'function') {
+      if (isFunction(then)) {
         // 规范2.3.3.3 如果result是个thenable对象，则调用其then方法，当他是Promise
         then.call(
           result,
           value => {
             if (!called) {
               called = true;
-              resolvePromise(newPromise, value, resolve, reject); // 这里需要递归取值，直到不是Promise为止
+              // 现代浏览器中，如果then返回是thenable对象则会延迟一次执行，而本身的then又会延迟，所以其实是两次
+              nextTaskQueue(() => {
+                resolvePromise(newPromise, value, resolve, reject); // 这里需要递归取值，直到不是Promise为止
+              });
             }
           },
           reason => {
             if (!called) {
               called = true;
-              reject(reason);
+              nextTaskQueue(() => {
+                reject(reason);
+              });
             }
           }
         );
@@ -506,9 +548,9 @@ then(onFulfilled, onRejected) {
 
 剩下的可以增加一些 api 实现和判断即可。
 
-但是**要注意**的是，静态方法包括 all、race、allSettled、any 等，传入的是任意可迭代对象，包括字符串等，如果传入的迭代对象中的子元素如果非 Promise 对象，则直接返回。
+但是**要注意**的是，静态方法包括 all、race、allSettled、any 等，传入的是任意**可迭代对象**，包括字符串等，如果传入的迭代对象中的子元素如果非 Promise 对象，则直接返回。
 
-### tips
+## tips
 
 因为个人在网上看了很多类似的，但是并没有很完整的解释细节，例如 called 是做什么的。
 所以自己总结了一下。
@@ -538,20 +580,22 @@ const wait = time =>
 - 早期的小程序 api promise 化，因为本人 17 年开始接触小程序，那时候小程序全是 success 和 fail 回调，用起来很头疼（现在全支持 thenable 调用了），所以做了个 promisify 函数。
 
 ```javascript
-const promisify = wxapi => (options, ...args) =>
-  new Promise((resolve, reject) =>
-    wxapi.apply(null, [
-      {
-        ...options,
-        success: resolve,
-        fail: err => {
-          console.log(err);
-          reject(err);
+const promisify =
+  wxapi =>
+  (options, ...args) =>
+    new Promise((resolve, reject) =>
+      wxapi.apply(null, [
+        {
+          ...options,
+          success: resolve,
+          fail: err => {
+            console.log(err);
+            reject(err);
+          },
         },
-      },
-      ...args,
-    ])
-  );
+        ...args,
+      ])
+    );
 
 (async () => {
   await promisify(wx.login)();
@@ -569,7 +613,7 @@ const loading = (title = '加载中..') => {
 
 ---
 
-### 最后
+## 最后
 
 在了解了源码后，其实可以延伸出一些 Promise 执行顺序的问题
 
@@ -689,5 +733,42 @@ new Promise((res, rej) => {
 ```
 
 而 reject 则不会。
+
+---
+
+```javascript
+new Promise(res => res(Promise.resolve())).then(() => console.log(2));
+
+Promise.resolve(Promise.resolve()).then(() => console.log(1));
+```
+
+```javascript
+Promise.resolve()
+  .then(() => {
+    console.log(1);
+    return Promise.resolve(5);
+  })
+  .then(r => {
+    console.log(r);
+  });
+
+Promise.resolve()
+  .then(() => {
+    console.log(2);
+  })
+  .then(() => {
+    console.log(3);
+  })
+  .then(() => {
+    console.log(4);
+  })
+  .then(() => {
+    console.log(6);
+  });
+```
+
+这两个可以一块说，大部分网上的例子都没实现这块的逻辑，也是 Promise 的一个需要注意的细节：**就是 resolve、then 传入的回调函数的返回，如果是 Promise 对象，则会延迟两个 tick**。
+
+为什么呢，这块当然涉及到 v8 实现的源码，不说这么复杂简单化来说的话就是，Promise 会先把 then 执行一次，这里会有一个 tick（如果是 thenable 对象则不会），执行这个 then 时传入的回调会包含另一个 tick 的延迟。
 
 ## **[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/script/MyPromise.js)**

@@ -191,6 +191,11 @@ class MyPromise {
     });
   }
 
+  /**
+   * @description 当传入的所有promise都fulfilled后resolve，有一个rejected就reject
+   * @description 当传入的是空迭代对象，则一直直接fulfilled
+   * @param {Iterable<any>} promiseList
+   */
   static all(promiseList) {
     if (!isIterable(promiseList)) {
       throw TypeError(`${promiseList} is not iterable`);
@@ -223,7 +228,8 @@ class MyPromise {
   }
 
   /**
-   * 当传入的是空迭代对象，则一直pending
+   * @description 当传入的任意一个promise状态更改就返回
+   * @description 当传入的是空迭代对象，则一直pending
    * @param {Iterable<any>} promiseList
    */
   static race(promiseList) {
@@ -245,6 +251,11 @@ class MyPromise {
     });
   }
 
+  /**
+   * @description 当传入的所有promise状态更改才返回，永远都是fulfilled
+   * @description 当传入的是空迭代对象，则一直pending
+   * @param {Iterable<any>} promiseList
+   */
   static allSettled(promiseList) {
     if (!isIterable(promiseList)) {
       throw TypeError(`${promiseList} is not iterable`);
@@ -255,6 +266,7 @@ class MyPromise {
       const list = [...promiseList];
       const length = list.length;
       if (length === 0) {
+        // any是如果传入空迭代对象则返回一个resolved的promise，带传入的列表
         resolve(list);
       } else {
         // 根据提案要求，allSettled会在所有promise完成或者拒绝后执行
@@ -291,7 +303,8 @@ class MyPromise {
   }
 
   /**
-   * 当传入的是空迭代对象，则直接reject，当所有都是rejected才进入reject
+   * @description 当传入的任意一个promise状态是fulfilled就resolve，当所有都是rejected才进入reject
+   * @description 当传入的是空迭代对象，则直接reject
    * @param {Iterable<any>} promiseList
    */
   static any(promiseList) {
@@ -303,6 +316,7 @@ class MyPromise {
       const list = [...promiseList];
       const length = list.length;
       if (length === 0) {
+        // any是如果传入空迭代对象则返回一个rejected的promise
         reject('AggregateError: All promises were rejected');
       } else {
         list.forEach(p => {
@@ -355,13 +369,17 @@ const resolvePromise = (newPromise, result, resolve, reject) => {
           value => {
             if (!called) {
               called = true;
-              resolvePromise(newPromise, value, resolve, reject); // 这里需要递归取值，直到不是Promise为止
+              nextTaskQueue(() => {
+                resolvePromise(newPromise, value, resolve, reject); // 这里需要递归取值，直到不是Promise为止
+              });
             }
           },
           reason => {
             if (!called) {
               called = true;
-              reject(reason);
+              nextTaskQueue(() => {
+                reject(reason);
+              });
             }
           }
         );
@@ -380,7 +398,7 @@ const resolvePromise = (newPromise, result, resolve, reject) => {
   }
 };
 
-// // 测试
+// // 测试 promises-aplus-tests ./assets/script/MyPromise.js
 // MyPromise.defer = MyPromise.deferred = function () {
 //   let dfd = {};
 //   dfd.promise = new MyPromise((resolve, reject) => {
