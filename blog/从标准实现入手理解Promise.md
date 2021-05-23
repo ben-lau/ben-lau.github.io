@@ -273,6 +273,48 @@ npm install -g promises-aplus-tests
 promises-aplus-tests MyPromise.js
 ```
 
+## 微任务创建器
+
+我们都知道 Promise 的 then 创建的是异步任务（microtask），而我们需要实现 Promise 的话当然不能用他来创建，网上各种实现可能基本都是 setTimeout，这个是将任务推入下一宏任务（macrotask）中。所以我们需要一个微任务创建器，这时候就需要用到几个 api 了：一个是[queueMicrotask](https://developer.mozilla.org/zh-CN/docs/Web/API/WindowOrWorkerGlobalScope/queueMicrotask)，还有[MutationObserver](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver)，这两个都是可以将回调函数推入微任务队列的，然后我们可以先封装一个降级方案：
+
+```javascript
+// 判断是否函数
+const isFunction = target => typeof target === 'function';
+
+// 判断是否原生方法
+const isNativeFunction = Ctor =>
+  isFunction(Ctor) && /native code/.test(Ctor.toString());
+
+// 推入微任务队列
+const nextTaskQueue = cb => {
+  if (
+    typeof queueMicrotask !== 'undefined' &&
+    isNativeFunction(queueMicrotask)
+  ) {
+    queueMicrotask(cb);
+  } else if (
+    typeof MutationObserver !== 'undefined' &&
+    (isNativeFunction(MutationObserver) ||
+      MutationObserver.toString() === '[object MutationObserverConstructor]')
+  ) {
+    const observer = new MutationObserver(cb);
+    const node = document.createTextNode('1');
+    observer.observe(node, {
+      characterData: true,
+    });
+    node.data = '2';
+  } else if (typeof process !== 'undefined' && isFunction(process.nextTick)) {
+    process.nextTick(cb);
+  } else {
+    setTimeout(() => {
+      cb();
+    }, 0);
+  }
+};
+```
+
+如此，后面我们需要创建异步 tick 就可以使用这个`nextTaskQueue`。
+
 ## Promise 结构
 
 可以从日常使用 Promise 中了解到，Promise 需要 new 出实例，并且传入回调函数，而回调函数接收两个参数（resolve、reject），回调函数会立刻执行。返回的 Promise 实例中可调用 then 或者 catch 接收完成和错误。
@@ -372,8 +414,11 @@ class MyPromise {
 ```
 
 到这里，构造函数已经差不多了，剩下的开始实现`then`方法。
+
 我们知道，then 后面可以链式调用 then，并且**then 获取的值为上一个 then 返回的新 Promise 对象中的值**，很多人误认为链式调用获取的是链式的头的 Promise，其实不然，Promise 每个 then 都会创建一个新 Promise，所以你下一个 then 跟最前面的 Promise 不一定有关系。
+
 而且，如果 then 中传入的不是函数，则会直接传出，直到被传入函数的 then 捕捉。
+
 然后，在调用 then 时，Promise 对象可能为三种状态，但是即使是已完成或已拒绝，也不会立刻执行，而是被推入微任务队列中。
 
 ```javascript
@@ -417,6 +462,7 @@ class MyPromise {
 ```
 
 到这里为止，基本差不多了，然而并没有这么简单。回调函数可能是任何值，包括返回了一个 Promise 对象，这种情况需要以返回的 Promise 为准。
+
 所以这里可以封装出一个方法专门处理 Promise 以及其回调，以适配所有标准
 
 ```javascript
