@@ -461,7 +461,7 @@ class MyPromise {
 }
 ```
 
-到这里为止，基本差不多了，然而并没有这么简单。回调函数可能是任何值，包括返回了一个 Promise 对象，这种情况需要以返回的 Promise 为准。
+到这里为止，基本差不多了，然而并没有这么简单。回调函数可能是任何值，包括返回了一个 Promise 对象，这种情况需要以返回的 Promise 为准。并且如果是这种情况，后面 then 会被延迟两个 tick 执行，具体实现可以参考 V8 引擎对[ResolvePromise](https://chromium.googlesource.com/v8/v8.git/+/refs/heads/9.0-lkgr/src/builtins/promise-resolve.tq#88)和[PromiseResolveThenableJob](https://chromium.googlesource.com/v8/v8.git/+/refs/heads/9.0-lkgr/src/builtins/promise-jobs.tq)的实现，这里不作深入讲解。
 
 所以这里可以封装出一个方法专门处理 Promise 以及其回调，以适配所有标准
 
@@ -845,5 +845,18 @@ Promise.resolve()
 这两个可以一块说，大部分网上的例子都没实现这块的逻辑，也是 Promise 的一个需要注意的细节：**就是 resolve、then 传入的回调函数的返回，如果是 Promise 对象，则会延迟两个 tick**。
 
 为什么呢，这块当然涉及到 v8 实现的源码，不说这么复杂简单化来说的话就是，Promise 会先把 then 执行一次，这里会有一个 tick（如果是 thenable 对象则不会），执行这个 then 时传入的回调会包含另一个 tick 的延迟。
+
+## 完整实现
+
+下面贴出全代码实现，包含了
+
+- [x] Promise/A+规范实现
+- [x] 所有目前（ES2021）的 Promise 实例方法（finally）、静态方法（any、allSettled）等的实现
+- [x] 将异步任务正确推入微任务队列
+- [x] then 传入的回调函数返回 Promise 对象，延迟两个 tick
+- [x] 构造函数的参数 executor 中 resolve 入参传入为 Promise 对象也会延迟两个 tick
+- [x] Promise.resolve 传入 Promise 对象时会直接将其返回出去，Promise.reject 则不然
+- [x] Promise 各种静态方法（all、race、any、allsettled）传入的是可迭代对象而非数组
+- [x] Promise 各种静态方法（all、race、any、allsettled）传入的可迭代对象成员如果不是 Promise 对象会直接返回，但是也是会进入下一微任务（很多实现都是直接 resolve 并没有延迟）
 
 ## **[完整代码在这里](https://github.com/ben-lau/blog/blob/master/assets/script/MyPromise.js)**
