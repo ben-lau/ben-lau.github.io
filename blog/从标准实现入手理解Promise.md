@@ -548,7 +548,7 @@ then(onFulfilled, onRejected) {
 
 剩下的可以增加一些 api 实现和判断即可。
 
-但是**要注意**的是，静态方法包括 all、race、allSettled、any 等，传入的是任意**可迭代对象**，包括字符串等，如果传入的迭代对象中的子元素如果非 Promise 对象，则直接返回。
+但是**要注意**的是，静态方法包括 all、race、allSettled、any 等，传入的是任意**可迭代对象**，包括字符串等，如果传入的迭代对象中的子元素如果非 Promise 对象，则直接返回，而即使是非 Promise 对象，也是需要推入微任务在下一 tick 执行（很多实现忽略了这些）。
 
 ## tips
 
@@ -577,7 +577,7 @@ const wait = time =>
 // print 2
 ```
 
-- 早期的小程序 api promise 化，因为本人 17 年开始接触小程序，那时候小程序全是 success 和 fail 回调，用起来很头疼（现在全支持 thenable 调用了），所以做了个 promisify 函数。
+- 早期的小程序 api promise 化，因为本人 16 年开始接触小程序，那时候小程序全是 success 和 fail 回调，用起来很头疼（现在全支持 thenable 调用了），所以做了个 promisify 函数。
 
 ```javascript
 const promisify =
@@ -747,6 +747,35 @@ Promise.resolve()
   .then(() => {
     console.log(1);
     return Promise.resolve(5);
+  })
+  .then(r => {
+    console.log(r);
+  });
+
+Promise.resolve()
+  .then(() => {
+    console.log(2);
+  })
+  .then(() => {
+    console.log(3);
+  })
+  .then(() => {
+    console.log(4);
+  })
+  .then(() => {
+    console.log(6);
+  });
+```
+
+```javascript
+Promise.resolve()
+  .then(() => {
+    console.log(1);
+    return {
+      then(r) {
+        r(5);
+      },
+    };
   })
   .then(r => {
     console.log(r);
