@@ -22,6 +22,6 @@
 
 8、[《跨域到底是怎么回事》](https://github.com/ben-lau/blog/blob/master/blog/跨域到底是怎么回事.md)
 
-9、[《跨域到底是怎么回回事-CORS 详解》](https://github.com/ben-lau/blog/blob/master/blog/跨域到底是怎么回回事-CORS详解.md)
+9、[《跨域到底是怎么回事-CORS 详解》](https://github.com/ben-lau/blog/blob/master/blog/跨域到底是怎么回事-CORS详解.md)
 
 ---

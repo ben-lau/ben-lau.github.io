@@ -1,4 +1,4 @@
-# 跨域到底是怎么回事(二) CORS 详解
+# 跨域到底是怎么回事-CORS详解
 
 ## CORS(Cross-Origin Resource Sharing)
 
