@@ -1,4 +1,4 @@
-# 跨域到底是怎么回事-CORS详解
+# 跨域到底是怎么回事-CORS 详解
 
 ## CORS(Cross-Origin Resource Sharing)
 
@@ -131,7 +131,9 @@ app.options('/info', (req, res) => {
 
 这时候我们需要将**access-control-allow-credentials**设置为`'true'`，再试一次，获得了另一个报错：
 
-`Response to preflight request doesn't pass access control check: The value of the 'Access-Control-Allow-Credentials' header in the response is '' which must be 'true' when the request's credentials mode is 'include'.`
+`The value of the 'Access-Control-Allow-Origin' header in the response must not be the wildcard '*' when the request's credentials mode is 'include'. The credentials mode of requests initiated by the XMLHttpRequest is controlled by the withCredentials attribute`
+
+这是因为当**access-control-allow-credentials**为`'true'`时，**access-control-allow-origin**将必须为正确的请求发起 url，不能为\*。所以这时候将**access-control-allow-origin**返回请求时的 origin 即可。
 
 这时候就能将 cookie 提交了。
 
