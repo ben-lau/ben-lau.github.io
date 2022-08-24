@@ -26,4 +26,6 @@
 
 10、[《跨域到底是怎么回事-四个跨域协定》](https://github.com/ben-lau/blog/blob/master/blog/跨域到底是怎么回事-四个跨域协定.md)
 
+11、[《node 是如何同步写入文件的》](https://github.com/ben-lau/blog/blob/master/blog/node是如何同步写入文件的.md)
+
 ---
