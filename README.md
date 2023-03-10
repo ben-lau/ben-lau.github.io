@@ -28,4 +28,6 @@
 
 11、[《node 是如何同步写入文件的》](https://github.com/ben-lau/blog/blob/master/blog/node是如何同步写入文件的.md)
 
+12、[《如何用一个定时器做延时队列》](https://github.com/ben-lau/blog/blob/master/blog/如何用一个定时器做延时队列.md)
+
 ---
