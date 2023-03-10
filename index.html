@@ -1,0 +1,782 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/images/weather.png">
+  <link rel="icon" type="image/png" href="/images/weather.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="Ben Lau">
+  <meta name="keywords" content="">
+  <title>Ben Lau&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_pf9vaxs7x7b.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.1.1"></head>
+
+
+<body>
+  <header style="height: 100vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Ben Lau's space</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/images/bg-everything-will-be-ok.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container page-header text-center fade-in-up">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+          </div>
+
+          
+            <div class="scroll-down-bar">
+              <i class="iconfont icon-arrowdown"></i>
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      <div class="container nopadding-md">
+        <div class="py-5" id="board"
+          style=margin-top:0>
+          
+          <div class="container">
+            <div class="row">
+              <div class="col-12 col-md-10 m-auto">
+                
+
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/%E5%A6%82%E4%BD%95%E7%94%A8%E4%B8%80%E4%B8%AA%E5%AE%9A%E6%97%B6%E5%99%A8%E5%81%9A%E5%BB%B6%E6%97%B6%E9%98%9F%E5%88%97/">如何用一个定时器做延时队列</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/%E5%A6%82%E4%BD%95%E7%94%A8%E4%B8%80%E4%B8%AA%E5%AE%9A%E6%97%B6%E5%99%A8%E5%81%9A%E5%BB%B6%E6%97%B6%E9%98%9F%E5%88%97/">
+          
+          
+            
+          
+          如何用一个定时器做延时队列起因起因是团队内小伙伴遇到了一个有意思的题，大概内容是这样：如何实现类似 Message 组件（全局通知提示，几秒钟自动消失的那种）的调度功能。这个题这样子看很简单，大概是这样
+const showMessage = msg =&gt;
+  new Promise(resolve =&gt; &#123;
+    const message = Message.show(
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2023-03-10 23:26" pubdate>
+              2023-03-10
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/Javascript/">Javascript</a>
+            
+              <a href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/node%E6%98%AF%E5%A6%82%E4%BD%95%E5%90%8C%E6%AD%A5%E5%86%99%E5%85%A5%E6%96%87%E4%BB%B6%E7%9A%84/">node是如何同步写入文件的</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/node%E6%98%AF%E5%A6%82%E4%BD%95%E5%90%8C%E6%AD%A5%E5%86%99%E5%85%A5%E6%96%87%E4%BB%B6%E7%9A%84/">
+          
+          
+            
+          
+          node 是如何同步写入文件的最近在知乎上被邀请了一个问题，觉得比较有趣就试着回答了一下。
+众所周知，nodejs 的 io 是非阻塞模型，但是还提供了同步接口，这一点确实有趣，那到底是怎么实现这些文件写入的呢？
+以下的源码都是基于 node 16.17.0
+node 部分我们知道 fs 中写入文件的 api: writeFile和writeFileSync，那他们到底做了什么呢，我们可以先看源码
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-08-24 16:52" pubdate>
+              2022-08-24
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+            
+              <a href="/tags/NodeJs/">NodeJs</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/%E8%B7%A8%E5%9F%9F%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B-%E5%9B%9B%E4%B8%AA%E8%B7%A8%E5%9F%9F%E5%8D%8F%E5%AE%9A/">跨域到底是怎么回事-四个跨域协定</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/%E8%B7%A8%E5%9F%9F%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B-%E5%9B%9B%E4%B8%AA%E8%B7%A8%E5%9F%9F%E5%8D%8F%E5%AE%9A/">
+          
+          
+            
+          
+          前面我分别讲解了跨域的基本情况和解决方案，和CORS 到底怎么回事，分别详细介绍了跨域的原因、资源请求限制的问题和方案，也完整、详细地介绍了 CORS 的所有相关内容，以及部分容易出现但难发现的问题方案。
+作为本系列的最后一期，将会讲解剩余的跨域安全部分。前面两篇着重讲解的是 CORS，根本原则是不允许 js 脚本获取跨域资源内容，那其实除此之外还有别的协定如下：
+
+CORB(Cross-Orig
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-02-05 22:53" pubdate>
+              2022-02-05
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HTTP/">HTTP</a>
+            
+              <a href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+            
+              <a href="/tags/%E6%B5%8F%E8%A7%88%E5%99%A8/">浏览器</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/%E8%B7%A8%E5%9F%9F%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B-CORS%E8%AF%A6%E8%A7%A3/">跨域到底是怎么回事-CORS详解</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/%E8%B7%A8%E5%9F%9F%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B-CORS%E8%AF%A6%E8%A7%A3/">
+          
+          
+            
+          
+          CORS(Cross-Origin Resource Sharing)很多人可能会混淆，觉得 CORS 是安全协议之类的，其实不然，CORS（Cross-Origin Resource Sharing，跨域资源共享）其实是一个系统，由一些列 HTTP headers 组成，这些 HTTP headers 决定了浏览器是否阻止前端 js 代码获取跨域请求的响应。就是一种提供给服务端，让其绕过 SOP
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2021-07-22 19:19" pubdate>
+              2021-07-22
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HTTP/">HTTP</a>
+            
+              <a href="/tags/Javascript/">Javascript</a>
+            
+              <a href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/%E8%B7%A8%E5%9F%9F%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B/">跨域是怎么回事</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/%E8%B7%A8%E5%9F%9F%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B/">
+          
+          
+            
+          
+          跨域是怎么回事从一个常见的问题开篇request has been blocked by CORS policy: No &#39;Access-Control-Allow-Origin&#39; header is present on the requested resource.
+相信上面的错误很多时候都能碰到，一般发生在前端发起请求时，而可能很多开发都不知道怎么解决，甚至是谁去解决。其实这
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2021-04-08 19:02" pubdate>
+              2021-04-08
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/Javascript/">Javascript</a>
+            
+              <a href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+            
+              <a href="/tags/%E6%B5%8F%E8%A7%88%E5%99%A8/">浏览器</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/%E5%8F%98%E9%87%8F%E6%8F%90%E5%8D%87%E5%92%8C%E5%87%BD%E6%95%B0%E5%A3%B0%E6%98%8E%E6%8F%90%E5%8D%87/">变量提升和函数声明提升</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/%E5%8F%98%E9%87%8F%E6%8F%90%E5%8D%87%E5%92%8C%E5%87%BD%E6%95%B0%E5%A3%B0%E6%98%8E%E6%8F%90%E5%8D%87/">
+          
+          
+            
+          
+          变量提升和函数声明提升关于 Javascript 中的变量提升（variable hoisting）可能在前端界已经耳熟能详了，可能你会觉得设计初衷是什么呢，或者这里有出于什么考虑以及解决了什么问题呢？因为这块“特性”成为了前端人必须了解并绕过的坑，也可能成为了不少前端人的困扰。
+其实根据 Brendan Eich 的说法：
+大概意思就是，变量提升是函数提升的意外结果。（手动狗头）
+题目下面开始先
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2021-02-08 11:34" pubdate>
+              2021-02-08
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/Javascript/">Javascript</a>
+            
+              <a href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/%E6%89%A7%E8%A1%8C%E4%B8%8A%E4%B8%8B%E6%96%87%E5%92%8C%E4%BD%9C%E7%94%A8%E5%9F%9F/">执行上下文和作用域</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/%E6%89%A7%E8%A1%8C%E4%B8%8A%E4%B8%8B%E6%96%87%E5%92%8C%E4%BD%9C%E7%94%A8%E5%9F%9F/">
+          
+          
+            
+          
+          执行上下文和作用域执行上下文是一个描述代码运行时所在环境的抽象概念，JavaScript 引擎再开始执行代码前，会创建全局执行上下文 ，全局代码（不属于任何函数的代码）在全局执行上下文中执行。 全局执行上下文 在每个 JS 程序中只有一个。
+每个函数都有自己的执行环境。当执行流进入一个函数时，函数的环境就会被推入一个环境栈中（execution stack）。在函数执行完后，栈将其环境弹出，把控制
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2021-01-01 22:49" pubdate>
+              2021-01-01
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/Javascript/">Javascript</a>
+            
+              <a href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/301%E3%80%81302%E3%80%81303%E3%80%81307%E3%80%81308/">301、302、303、307、308</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/301%E3%80%81302%E3%80%81303%E3%80%81307%E3%80%81308/">
+          
+          
+            
+          
+          301、302、303、307、3081、HTTP 状态码HTTP 状态码是由 RFC2616 规范定义的，用以表示服务器超文本传输协议响应状态的 3 位数字代码。状态码是协助开发者掌握请求是否运转正常的一个标志，常见的大概有 200，304，404，500 等。每个状态码都有其代表的意义，而且也发挥着不同的作用。
+
+
+2、HTTP 3xxHTTP 状态码 3xx 一类的都是重定向（Redirec
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2020-11-26 11:08" pubdate>
+              2020-11-26
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/HTTP/">HTTP</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/%E4%B8%8D%E5%87%86%E7%A1%AE%E7%9A%84%E5%AE%9A%E6%97%B6%E5%99%A8/">不准确的定时器</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/%E4%B8%8D%E5%87%86%E7%A1%AE%E7%9A%84%E5%AE%9A%E6%97%B6%E5%99%A8/">
+          
+          
+            
+          
+          不准确的定时器什么是定时器javascript 的 globalThis 中，分别有三个 api：setTimeout、setInterval、setImmediate，他们都是定时器的一种，意思是允许在某个时刻开始执行，尽管他们看上去很相似，不过其实各不相同，甚至在不同运行环境也各自不同。
+
+setTimeout：用于设置一个定时器，在到期后执行一个函数。
+setInterval：用于设置一个轮
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2020-09-30 16:49" pubdate>
+              2020-09-30
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/Javascript/">Javascript</a>
+            
+              <a href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h1 class="index-header">
+        <a href="/Vue2%20%E5%93%8D%E5%BA%94%E5%BC%8F%E5%8E%9F%E7%90%86/">Vue2 响应式原理</a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/Vue2%20%E5%93%8D%E5%BA%94%E5%BC%8F%E5%8E%9F%E7%90%86/">
+          
+          
+            
+          
+          Vue2 响应式原理当前笔记为2.6.11版本的 Vue
+很多人对 Vue 的响应式原理大概能说得出，但是完整深入的流程可能不太清晰，其实中间还是有很多有趣的部分，下面将会从初始化开始讲起整个响应式系统的原理。部分代码片段中会有些个人理解所加的注解，注意留意一下。
+1. 开始先从vue/src/core/instance/index.js进入，这里是 Vue 的构造函数，下面调用了initMixi
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2020-09-11 16:44" pubdate>
+              2020-09-11
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/Javascript/">Javascript</a>
+            
+              <a href="/tags/Vue/">Vue</a>
+            
+              <a href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+
+
+  <nav aria-label="navigation">
+    <span class="pagination" id="pagination">
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="iconfont icon-arrowright"></i></a>
+    </span>
+  </nav>
+  
+  <script>
+    for (ele of document.getElementById("pagination").getElementsByTagName("a")) {
+      ele.href += '#board';
+    }
+  </script>
+
+
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+  </main>
+
+  
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <!-- <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
+    </div> -->
+    
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            
+            <span id="busuanzi_value_site_pv"></span>
+             
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            
+            <span id="busuanzi_value_site_uv"></span>
+             
+          </span>
+      
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="/js/debouncer.js" ></script>
+<script  src="/js/main.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "while(isAlive()) { code(); }&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      searchFunc(path, 'local-search-input', 'local-search-result');
+      this.onclick = null
+    }
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

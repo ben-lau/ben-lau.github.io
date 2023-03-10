@@ -1,0 +1,708 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/images/weather.png">
+  <link rel="icon" type="image/png" href="/images/weather.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="Ben Lau">
+  <meta name="keywords" content="">
+  <title>跨域到底是怎么回事-四个跨域协定 - Ben Lau&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/atom-one-dark.min.css" />
+    
+  
+
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_pf9vaxs7x7b.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.1.1"></head>
+
+
+<body>
+  <header style="height: 80vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Ben Lau's space</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/images/bg-sky-island.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container page-header text-center fade-in-up">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2022-02-05 22:53" pubdate>
+        2022年2月5日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      2.6k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      46
+       分钟
+    </span>
+  
+
+  
+  
+    
+      <!-- 不蒜子统计文章PV -->
+      <span id="busuanzi_container_page_pv" style="display: none">
+        <i class="iconfont icon-eye" aria-hidden="true"></i>
+        <span id="busuanzi_value_page_pv"></span> 次
+      </span>
+    
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    
+      <div class="d-none d-lg-block col-lg-2 ml-3 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto" id="post">
+            <!-- SEO header -->
+            <h1 style="display: none">跨域到底是怎么回事-四个跨域协定</h1>
+            
+              <p class="note note-info">
+                
+                  本文最后更新于：1 年前
+                
+              </p>
+            
+            <div class="markdown-body" id="post-body">
+              <p>前面我分别讲解了<a href="https://ben-lau.github.io/%E8%B7%A8%E5%9F%9F%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B/">跨域的基本情况和解决方案</a>，和<a href="https://ben-lau.github.io/%E8%B7%A8%E5%9F%9F%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B-CORS%E8%AF%A6%E8%A7%A3/">CORS 到底怎么回事</a>，分别详细介绍了跨域的原因、资源请求限制的问题和方案，也完整、详细地介绍了 CORS 的所有相关内容，以及部分容易出现但难发现的问题方案。</p>
+<p>作为本系列的最后一期，将会讲解剩余的跨域安全部分。前面两篇着重讲解的是 CORS，根本原则是不允许 js 脚本获取跨域资源内容，那其实除此之外还有别的协定如下：</p>
+<ul>
+<li><strong>CORB(Cross-Origin-Read-Blocking)</strong></li>
+<li><strong>COOP(Cross-Origin-Opener-Policy)</strong></li>
+<li><strong>CORP(Cross-Origin-Resource-Policy)</strong></li>
+<li><strong>COEP(Cross-Origin-Embedder-Policy)</strong></li>
+</ul>
+<p>在介绍这些之前，先提一提这些协定的由来</p>
+<h2 id="起因-Spectre"><a href="#起因-Spectre" class="headerlink" title="起因: Spectre"></a>起因: Spectre</h2><p>2018 年 1 月， Google Project Zero 对外发布了文章讲述了三种严重的 CPU 漏洞：</p>
+<ul>
+<li>bounds check bypass (CVE-2017-5753)</li>
+<li>branch target injection (CVE-2017-5715)</li>
+<li>rogue data cache load (CVE-2017-5754)</li>
+</ul>
+<p>前两种又被称为 <code>Spectre</code>，第三种被称为是 <code>Meltdown</code>。<code>Spectre</code> 是一个 2018 年被发现的严重 CPU 漏洞，通过它攻击者可以通过恶意进程获得其他程序在映射内存中的资料内容，具体内容可以看看<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Spectre_(security_vulnerability)">Spectre (security vulnerability)</a></p>
+<p>简单来说，在浏览器上透过 CPU 的一些机制来进行边信道攻击（side channel attack），获取同一进程内不同网站的内存，或者浏览器本身的内存，特别时在使用一些需要和计算机硬件进行交互的 api 时（performance.measureMemory()、JS Self-Profiling API、SharedArrayBuffer）。虽然 chrome、firefox 也通过站点隔离创建堵截漏洞，但是也因此禁用了部分高风险 api。</p>
+<p>因为该漏洞是推测运行机制导致的，需要处理器微码更新堵截，原则上说<strong>只要让不同网站运行在不同进程的而下面就能规避该漏洞</strong>；而要讲的几种跨域协定，目的就是做好<strong>站点隔离（Site Isolation）</strong>，也是由此产生和切入的安全相关协定。</p>
+<h2 id="四个跨域协定"><a href="#四个跨域协定" class="headerlink" title="四个跨域协定"></a>四个跨域协定</h2><h3 id="CORB-Cross-Origin-Read-Blocking"><a href="#CORB-Cross-Origin-Read-Blocking" class="headerlink" title="CORB(Cross-Origin-Read-Blocking)"></a>CORB(Cross-Origin-Read-Blocking)</h3><p>虽然 CORS 已经将跨域资源共享部分限制，但是<code>&lt;link&gt;</code>、<code>&lt;script&gt;</code>、<code>&lt;img/&gt;</code>等标签还是可以将外部资源加载，例如<code>&lt;img src=&quot;https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf&quot;&gt;</code>，因为浏览器下载前不知道它是否图片资源，所以在下载后会进入渲染进程，这时候就容易被<code>Spectre漏洞</code>获取。</p>
+<p>所以<strong>CORB</strong>其实是一种算法，当浏览器中跨域加载到达渲染进程前，将可疑、敏感的资源进行识别和阻止，而 CORB 通过响应头的<code>content-type</code>进行判断就是一项非常好的方案，但是部分服务可能 content-type 是错误的，这时候 Chrome 会根据内容有一套自己的判断法则，基本原理是获取资源的 MIME type 进行嗅探（sniffing），而后再决定是否套用 CORB。</p>
+<p>但是 Chrome 也存在误判的可能，即资源的响应头中 content-type 其实才是正确的，而这时候可以在响应头中提供<code>X-Content-Type-Options: nosniff</code>，强制让 Chrome 不套用自己的嗅探而是直接使用 content-type。</p>
+<p>实际表现可以参考<a target="_blank" rel="noopener" href="https://anforowicz.github.io/xsdb-demo/index.html">这里</a>：</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/corb-example.png" srcset="/img/loading.gif" alt="被禁止进入渲染进程的资源"></p>
+<p>更多内容可以参考：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://chromium.googlesource.com/chromium/src/+/master/services/network/cross_origin_read_blocking_explainer.md">googlesource</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/whatwg/fetch/issues/681">github</a></li>
+</ul>
+<h3 id="COOP-Cross-Origin-Opener-Policy"><a href="#COOP-Cross-Origin-Opener-Policy" class="headerlink" title="COOP(Cross-Origin-Opener-Policy)"></a>COOP(Cross-Origin-Opener-Policy)</h3><p>当你在使用<code>window.open</code>时，你可以获取打开新窗口的 window 实例，这时候主窗口可以通过这个实例获取该子窗口的所有变量和更改 location，而子窗口也可以通过<code>window.opener</code>获取主窗口的实例。</p>
+<p>这显然违反了站点隔离，所以 COOP 就是用来解决这个问题，这个响应头<strong>Cross-Origin-Opener-Policy</strong>一共有三个值：</p>
+<ul>
+<li>unsafe-none</li>
+<li>same-origin-allow-popups</li>
+<li>same-origin</li>
+<li>same-origin-allow-popups-plus-coep (目前似乎还在实现，具体可<a target="_blank" rel="noopener" href="https://chromestatus.com/feature/5731309970259968">参考这里</a>)</li>
+</ul>
+<p>分别解释一下就是，如果主窗口和子窗口是非同源的站点，那就无法互相获取对方，只能使用部分 api 例如 reload、close 等；如果是同源站点，这时候就分以下几种情况，</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th align="center">子窗口 unsafe-none</th>
+<th align="center">same-origin-allow-popups</th>
+<th align="center">same-origin</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><b>主窗口 unsafe-none</b></td>
+<td align="center">允许</td>
+<td align="center">不允许</td>
+<td align="center">不允许</td>
+</tr>
+<tr>
+<td><b>same-origin-allow-popups</b></td>
+<td align="center">允许</td>
+<td align="center">允许</td>
+<td align="center">不允许</td>
+</tr>
+<tr>
+<td><b>same-origin</b></td>
+<td align="center">不允许</td>
+<td align="center">不允许</td>
+<td align="center">允许</td>
+</tr>
+</tbody></table>
+<p>我们可以准备代码自己做试验：</p>
+<ul>
+<li><p>准备一个 index.html(主窗口):</p>
+<div class="hljs"><pre><code class="hljs html"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-meta-keyword">html</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;en&quot;</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">&quot;UTF-8&quot;</span> /&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">http-equiv</span>=<span class="hljs-string">&quot;X-UA-Compatible&quot;</span> <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;IE=edge&quot;</span> /&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;viewport&quot;</span> <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;width=device-width, initial-scale=1.0&quot;</span> /&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>主窗口<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span>
+    index
+    <span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span>
+<span class="javascript">      <span class="hljs-built_in">window</span>.aaa = <span class="hljs-string">&#x27;this is index&#x27;</span>;</span>
+<span class="javascript">      <span class="hljs-built_in">document</span>.body.onclick = <span class="hljs-function">() =&gt;</span> &#123;</span>
+<span class="javascript">        <span class="hljs-keyword">const</span> win = <span class="hljs-built_in">window</span>.open(<span class="hljs-string">&#x27;http://localhost:9999/index2.html&#x27;</span>);</span>
+<span class="javascript">        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;index2 instance:&#x27;</span>, win);</span>
+      &#125;;
+    <span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span></code></pre></div>
+</li>
+<li><p>准备一个 index2.html(子窗口):</p>
+<div class="hljs"><pre><code class="hljs html"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-meta-keyword">html</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;en&quot;</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">&quot;UTF-8&quot;</span> /&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">http-equiv</span>=<span class="hljs-string">&quot;X-UA-Compatible&quot;</span> <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;IE=edge&quot;</span> /&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;viewport&quot;</span> <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;width=device-width, initial-scale=1.0&quot;</span> /&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>子窗口<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span>
+    index2
+    <span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span>
+<span class="javascript">      <span class="hljs-built_in">window</span>.aaa = <span class="hljs-string">&#x27;this is index2222222&#x27;</span>;</span>
+<span class="javascript">      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;index1:&#x27;</span>, <span class="hljs-built_in">window</span>.opener);</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span></code></pre></div>
+</li>
+<li><p>准备一个服务 app.js:</p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-keyword">const</span> express = <span class="hljs-built_in">require</span>(<span class="hljs-string">&#x27;express&#x27;</span>);
+<span class="hljs-keyword">const</span> app = express();
+
+app.use(<span class="hljs-function">(<span class="hljs-params">req, res, next</span>) =&gt;</span> &#123;
+  <span class="hljs-keyword">if</span> (req.url === <span class="hljs-string">&#x27;/index.html&#x27;</span>) &#123;
+    res.header(<span class="hljs-string">&#x27;Cross-Origin-Opener-Policy&#x27;</span>, <span class="hljs-string">&#x27;same-origin&#x27;</span>); <span class="hljs-comment">// 主窗口响应头</span>
+  &#125;
+
+  <span class="hljs-keyword">if</span> (req.url === <span class="hljs-string">&#x27;/index2.html&#x27;</span>) &#123;
+    res.header(<span class="hljs-string">&#x27;Cross-Origin-Opener-Policy&#x27;</span>, <span class="hljs-string">&#x27;same-origin&#x27;</span>); <span class="hljs-comment">// 子窗口响应头</span>
+  &#125;
+
+  next();
+&#125;);
+
+app.use(express.static(<span class="hljs-string">&#x27;.&#x27;</span>));
+
+app.listen(<span class="hljs-string">&#x27;9999&#x27;</span>, <span class="hljs-function">() =&gt;</span> &#123;
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;listen in 9999&#x27;</span>);
+&#125;);</code></pre></div>
+
+</li>
+</ul>
+<p>启动后点击 index 的 body，如果允许共享 window 则会发现：</p>
+<ul>
+<li><p>主窗口:<br><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/coop-succ-index.png" srcset="/img/loading.gif" alt="主窗口允许"></p>
+</li>
+<li><p>子窗口：<br><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/coop-succ-index2.png" srcset="/img/loading.gif" alt="子窗口允许"></p>
+</li>
+</ul>
+<p>如果不允许共享 window，则会出现：</p>
+<ul>
+<li><p>主窗口:<br><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/coop-fail-index.png" srcset="/img/loading.gif" alt="主窗口不允许"></p>
+</li>
+<li><p>子窗口：<br><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/coop-fail-index2.png" srcset="/img/loading.gif" alt="子窗口不允许"></p>
+</li>
+</ul>
+<p>当然也有现成的<a target="_blank" rel="noopener" href="https://first-party-test.glitch.me/coop">COOP 示例</a></p>
+<p>更多具体详情可以<a target="_blank" rel="noopener" href="https://github.com/whatwg/html/issues/3740">参考这里</a></p>
+<h4 id="COOP-的小替代品-noopener"><a href="#COOP-的小替代品-noopener" class="headerlink" title="COOP 的小替代品: noopener"></a>COOP 的小替代品: noopener</h4><p>noopener 属性具有与 COOP 的效果类似的效果，只是它只能从打开程序端工作（当窗口被第三方打开时，无法取消关联）。通过执行 <code>window.open(url， &#39;\_blank&#39;， &#39;noopener&#39;)</code> 或 <code>&lt;a target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;</code> 之类的操作来附加 noopener 时，即可以故意将窗口与打开的窗口断开关联。</p>
+<p>虽然 noopener 可以被 COOP 取代，当想在不支持 COOP 的浏览器中保护站点时，它仍然很有用。</p>
+<h3 id="CORP-Cross-Origin-Resource-Policy"><a href="#CORP-Cross-Origin-Resource-Policy" class="headerlink" title="CORP(Cross-Origin-Resource-Policy)"></a>CORP(Cross-Origin-Resource-Policy)</h3><p>这时候已经有 CORS 保护跨域资源共享，COOP 保护跨域页面实例共享，CORP 阻止可疑资源加载，那如果我服务中有图片、音乐等需要保护呢？这时候就是<strong>Cross-Origin-Resource-Policy</strong>这个响应头负责，这个属性有三个值：</p>
+<ul>
+<li>cross-origin</li>
+<li>same-site</li>
+<li>same-origin</li>
+</ul>
+<p>第一个值是允许跨域资源加载，但是与留空不一样，如果页面配置了<code>Cross-Origin-Embedder-Policy: require-corp</code>，而你的资源没返回<code>Cross-Origin-Resource-Policy: cross-origin</code>，则也不会被加载（后续会说）；same-site 和 same-origin 比较好理解，就是同站（eTLD+1）、同源才允许加载。</p>
+<p>可以利用下面代码测试：</p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-keyword">const</span> express = <span class="hljs-built_in">require</span>(<span class="hljs-string">&#x27;express&#x27;</span>);
+<span class="hljs-keyword">const</span> app = express();
+
+app.use(<span class="hljs-function">(<span class="hljs-params">req, res, next</span>) =&gt;</span> &#123;
+  res.header(<span class="hljs-string">&#x27;Cross-Origin-Resource-Policy&#x27;</span>, <span class="hljs-string">&#x27;same-origin&#x27;</span>);
+  next();
+&#125;);
+app.use(express.static(<span class="hljs-string">&#x27;.&#x27;</span>));
+app.listen(<span class="hljs-string">&#x27;9999&#x27;</span>, <span class="hljs-function">() =&gt;</span> &#123;
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;listen in 9999&#x27;</span>);
+&#125;);</code></pre></div>
+
+<p>这时候只要将服务的链接与引用资源的链接不一致时就会出现：</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/corp-example.png" srcset="/img/loading.gif" alt="被禁止加载的资源"></p>
+<p>控制台也有提示：</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/corp-console-error.png" srcset="/img/loading.gif" alt="禁止加载的资源警告"></p>
+<p>这样就可以保护自己的服务资源不被加载，具体可以<a target="_blank" rel="noopener" href="https://fetch.spec.whatwg.org/#cross-origin-resource-policy-header">参考这里</a></p>
+<h3 id="COEP-Cross-Origin-Embedder-Policy"><a href="#COEP-Cross-Origin-Embedder-Policy" class="headerlink" title="COEP(Cross-Origin-Embedder-Policy)"></a>COEP(Cross-Origin-Embedder-Policy)</h3><p>这个属性用于告诉浏览器，该站点所有嵌入的资源（img、video、audio、object 等）需要如何校验合法性，它有两个属性：</p>
+<ul>
+<li>unsafe-none</li>
+<li>require-corp</li>
+</ul>
+<p>第一个是默认值，即不做任何限制；第二个(<code>require-corp</code>)意义是：<strong>所有的嵌入跨域资源都是需要 corp 这个响应头且合法</strong>。</p>
+<p>如果站点有响应头<code>Cross-Origin-Embedder-Policy: require-corp</code>，而嵌入的跨域资源没有<code>Cross-Origin-Resource-Policy: cross-origin</code>，则会加载失败且报错：</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/cobp-example.png" srcset="/img/loading.gif" alt="加载失败的图片"></p>
+<p>控制台也有提示：</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/cobp-console-error.png" srcset="/img/loading.gif" alt="加载失败的图片警告"></p>
+<p>如果你的 COEP 站点需要的跨域资源确实没有设置 CORP，<strong>这时候也可以给嵌入资源添加<code>crossorigin</code>属性</strong>，如果该资源响应头带合法<code>Access-Control-Allow-Origin</code>属性，也可以正常加载渲染：</p>
+<div class="hljs"><pre><code class="hljs html"><span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;http://192.168.88.1:9999/pic.jpg&quot;</span> <span class="hljs-attr">crossorigin</span>=<span class="hljs-string">&quot;anonymous&quot;</span> /&gt;</span></code></pre></div>
+
+<h2 id="cross-origin-isolated（跨源隔离）"><a href="#cross-origin-isolated（跨源隔离）" class="headerlink" title="cross-origin isolated（跨源隔离）"></a>cross-origin isolated（跨源隔离）</h2><p>因为 Spectre 漏洞的原因，针对其漏洞特性，浏览器做了以下动作：</p>
+<ul>
+<li>部分 api 会被默认禁用（SharedArrayBuffer）</li>
+<li>减弱了 performance.now() , performance.timeOrigin 的精确性</li>
+</ul>
+<p>而如果你真的需要这些 api 或者精确性的话，则首先要让你的站点开启<strong>cross-origin isolated</strong>（跨源隔离）状态。达到这个状态的条件就是以下两个：</p>
+<ul>
+<li>Cross-Origin-Opener-Policy: same-origin</li>
+<li>Cross-Origin-Embedder-Policy: require-corp</li>
+</ul>
+<p>这时候<strong>self.crossOriginIsolated</strong>属性将会返回<code>true</code>，表明你的站点已成功隔离。为什么需要这样呢？因为设置了这两项，就表明你的站点跨源加载的资源、打开的窗口都应该是有权限的，都已允许或认证，则表面你的站点是安全的；而且这时候通过<a href="https://ben-lau.github.io/%E8%B7%A8%E5%9F%9F%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B/#2%E3%80%81document-domain">之前说的</a>修改<code>document.domain</code>绕过同源策略的骚操作就不再可用；这时候你的站点已经成功隔离浏览器 context group。</p>
+<p>可以参考</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://web.dev/i18n/en/coop-coep/">coop-coep</a></li>
+<li><a target="_blank" rel="noopener" href="https://web.dev/i18n/en/why-coop-coep/">why-coop-coep</a></li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>总结一下上面说到的四个跨域协定：</p>
+<ul>
+<li>CORB：浏览器的标准协定机制，用于阻止可疑、不合法的资源进入渲染</li>
+<li>COOP：是一个 HTTP headers 的标准，用于帮助严格的 window 实例对象共享规则</li>
+<li>CORP：也是一个 HTTP headers 的标准，可以保护资源不被跨源、跨站的站点加载渲染</li>
+<li>COEP：还是一个 HTTP headers 的标准，确保页面上所有的资源都是合法载入的</li>
+</ul>
+<p>最后通过学习前后三篇的关于跨域的文章，你应该深刻了解到了跨域的整个系统知识和方案，·后续也应该对这些问题刀过竹解。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/HTTP/">HTTP</a>
+                    
+                      <a class="hover-with-bg" href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%B5%8F%E8%A7%88%E5%99%A8/">浏览器</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/node%E6%98%AF%E5%A6%82%E4%BD%95%E5%90%8C%E6%AD%A5%E5%86%99%E5%85%A5%E6%96%87%E4%BB%B6%E7%9A%84/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">node是如何同步写入文件的</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/%E8%B7%A8%E5%9F%9F%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B-CORS%E8%AF%A6%E8%A7%A3/">
+                        <span class="hidden-mobile">跨域到底是怎么回事-CORS详解</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2"></div>
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <!-- <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
+    </div> -->
+    
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            
+            <span id="busuanzi_value_site_pv"></span>
+             
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            
+            <span id="busuanzi_value_site_uv"></span>
+             
+          </span>
+      
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="/js/debouncer.js" ></script>
+<script  src="/js/main.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '#post-body',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        collapseDepth: 0,
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc').css('visibility', 'visible');
+      }
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "跨域到底是怎么回事-四个跨域协定&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "left",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      searchFunc(path, 'local-search-input', 'local-search-result');
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <script>
+    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
+      function () {
+        var element = document.createElement('a');
+        $(element).attr('data-fancybox', 'images');
+        $(element).attr('href', $(this).attr('src'));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

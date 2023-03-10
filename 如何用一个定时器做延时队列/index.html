@@ -1,0 +1,685 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/images/weather.png">
+  <link rel="icon" type="image/png" href="/images/weather.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="Ben Lau">
+  <meta name="keywords" content="">
+  <title>如何用一个定时器做延时队列 - Ben Lau&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/atom-one-dark.min.css" />
+    
+  
+
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_pf9vaxs7x7b.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.1.1"></head>
+
+
+<body>
+  <header style="height: 80vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Ben Lau's space</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/images/bg-time.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container page-header text-center fade-in-up">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2023-03-10 23:26" pubdate>
+        2023年3月10日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      2.1k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      36
+       分钟
+    </span>
+  
+
+  
+  
+    
+      <!-- 不蒜子统计文章PV -->
+      <span id="busuanzi_container_page_pv" style="display: none">
+        <i class="iconfont icon-eye" aria-hidden="true"></i>
+        <span id="busuanzi_value_page_pv"></span> 次
+      </span>
+    
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    
+      <div class="d-none d-lg-block col-lg-2 ml-3 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto" id="post">
+            <!-- SEO header -->
+            <h1 style="display: none">如何用一个定时器做延时队列</h1>
+            
+              <p class="note note-info">
+                
+                  本文最后更新于：4 分钟前
+                
+              </p>
+            
+            <div class="markdown-body" id="post-body">
+              <h1 id="如何用一个定时器做延时队列"><a href="#如何用一个定时器做延时队列" class="headerlink" title="如何用一个定时器做延时队列"></a>如何用一个定时器做延时队列</h1><h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>起因是团队内小伙伴遇到了一个有意思的题，大概内容是这样：如何实现类似 Message 组件（全局通知提示，几秒钟自动消失的那种）的调度功能。这个题这样子看很简单，大概是这样</p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-keyword">const</span> showMessage = <span class="hljs-function"><span class="hljs-params">msg</span> =&gt;</span>
+  <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-params">resolve</span> =&gt;</span> &#123;
+    <span class="hljs-keyword">const</span> message = Message.show(msg);
+    <span class="hljs-built_in">setTimeout</span>(<span class="hljs-function">() =&gt;</span> &#123;
+      message.close();
+      resolve();
+    &#125;, delay);
+  &#125;);</code></pre></div>
+
+<p>大致意思就是如此，每次显示就开启定时器并在定时器结束后关闭，虽然没很完整具体实现，但是很容易理解这题目的意思</p>
+<p>后来就被问到：<strong>能否用一个定时器实现</strong>？</p>
+<p>小伙伴对此比较懵，所以我在这里也试着实现一下</p>
+<h2 id="为什么感兴趣"><a href="#为什么感兴趣" class="headerlink" title="为什么感兴趣"></a>为什么感兴趣</h2><p>实际上这种场景在业务中也是比较多，除了上面说的 Message 组件，还有类似以下的场景：</p>
+<ul>
+<li>用户下单后超过 30 分钟不支付则自动取消订单并归还库存</li>
+<li>会议室被预定了会在开始前 15 分钟通知用户<br>…</li>
+</ul>
+<p>这些<strong>延迟时间已知，但是随时可能被创建</strong>的场景，延时队列就是其中一种方案，说是队列但是并不遵从先进先出，应该是按时间进行的结构。而中心化调度可以把过程控制在一个地方，也较好维护（其实真实业务直接创定时器就可以了，主要是小伙伴搞不定）</p>
+<h2 id="思考过程"><a href="#思考过程" class="headerlink" title="思考过程"></a>思考过程</h2><p>首先要知道这题目的是看是否能中心化调度，而且每个任务都是延迟的，而且还有可能<strong>后加入</strong>的任务延迟时间比已有的定时器更早达到，这种情况就需要不断地调整定时器。</p>
+<p>而我们知道定时器 api：<code>setTimeout</code>是无法修改时间的，只能手动清除；那么第二个想到的就是类似<code>requestAnimationFrame</code>的方案，在每次回调中检查时间并查询任务队列中的延时任务是否已经到达然后执行，但是这种方案其实性能更差也更多的无意义判断和调用</p>
+<p>后面我就只能往<strong>同时只存在一个</strong>定时器的实现情况，也就是说动态化定时器</p>
+<p>那既然有了想法就开始想思路，其实很简单</p>
+<ol>
+<li>创建单例定时器，并且维护一个任务队列</li>
+<li>插入任务并且开始启动定时器</li>
+<li>在等待时如果插入了别的任务，则取消定时器，并计算<strong>相对时间</strong>重新开启</li>
+<li>定时器通知中心调度并取出达到的任务，并执行后出列</li>
+<li>重复上述步骤直到队列被清空</li>
+</ol>
+<p>有了思路之后，开始看看是否有问题，首先是不断的重启定时器感觉好像有点浪费性能，然后还有小伙伴会觉得需要做个排序（甚至默写了一个插排），其实这里用相对时间做缓存记录即可，但是要注意一个点就是<strong>相对时间</strong>：</p>
+<p>假设我们有三个任务分别创建，任务一延时 2 秒，任务二延时 2 秒在 1 秒后插入，任务三延时 1 秒在 1.5 秒后插入，如下图</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/delay-queue-example.png" srcset="/img/loading.gif" alt="时间轴示例"></p>
+<p>可以看到，在任务一时我们创建了一个 2 秒的定时器，在 1 秒后，插入了任务二，其实他会在任务一之后才完成，那其实我们完全可以不重启定时器，因为在任务一完成后我们再计算即可。但是要注意的是，任务二也是 2 秒任务，但是我们期望是在时间轴的<strong>第 3 秒</strong>执行，如果我们直接存起来，那就会变成第 4 秒才执行了（2 秒后再等 2 秒执行任务二），所以其实我们可以把任务二补足时间，以当前定时器的启动时期间为基准，因为如果任务较多的话，基准多就容易出问题。</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/delay-queue-patch.png" srcset="/img/loading.gif" alt="时间轴补丁示例"></p>
+<p>然后看任务三，任务三是后面插入的任务但是他会比任务一更早完成，那这个时候就无法利用已有的任务一定时器，这种情况才必要重启定时器，并且要修改任务 1 的相对基准时间为 1.5 秒后，如图所示：</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/delay-queue-patch-2.png" srcset="/img/loading.gif" alt="时间轴补丁示例2"></p>
+<p>到这里为止其实思路都完整了，我们可以画成一个流程图更好帮助我们编码</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/delay-queue-flow.png" srcset="/img/loading.gif" alt="编码流程图"></p>
+<h2 id="开始编码"><a href="#开始编码" class="headerlink" title="开始编码"></a>开始编码</h2><p>首先我们可以先做好拆分，因为延时任务队列其实跟定时器无关的，那定时器我们可以稍微封装一下，因为需要记录创建时间和一个获取已经过了的时间：</p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Timer</span> </span>&#123;
+  <span class="hljs-comment">// 是否启动</span>
+  active = <span class="hljs-literal">false</span>;
+  <span class="hljs-comment">// 本次延时</span>
+  #delay = 0;
+  <span class="hljs-comment">// 创建时间</span>
+  #timestamp = 0;
+  <span class="hljs-comment">// 定时器实例</span>
+  #id = null;
+  <span class="hljs-comment">// 任务内容</span>
+  #task = null;
+  <span class="hljs-comment">// 获取已过去的时间</span>
+  <span class="hljs-keyword">get</span> <span class="hljs-title">passedTime</span>() &#123;
+    return this.active ? Date.now() - this.#timestamp : 0;
+  &#125;
+  <span class="hljs-comment">// 获取剩余时间</span>
+  <span class="hljs-keyword">get</span> <span class="hljs-title">restTime</span>() &#123;
+    return this.active ? this.#delay - this.passedTime : 0;
+  &#125;
+
+  set(task, delay) &#123;
+    if (this.#id) &#123;
+      <span class="hljs-built_in">this</span>.stop();
+    &#125;
+
+    this.#timestamp = Date.now();
+    this.#delay = delay;
+    this.#task = task;
+    <span class="hljs-built_in">this</span>.active = <span class="hljs-literal">true</span>;
+    this.#id = setTimeout(() =&gt; &#123;
+      this.#task.call(null);
+      <span class="hljs-built_in">this</span>.active = <span class="hljs-literal">false</span>;
+    &#125;, this.#delay);
+  &#125;
+
+  stop() &#123;
+    clearTimeout(this.#id);
+    <span class="hljs-built_in">this</span>.active = <span class="hljs-literal">false</span>;
+    this.#delay = 0;
+    this.#id = null;
+  &#125;
+&#125;</code></pre></div>
+
+<p>ok，到此我们有个自己的定时器，定时器在启动时会清除存在的定时器，这样子就能保证我们同时只有一个定时器在运行</p>
+<p>截下来我们要开始写延时队列，首先得有定时器实例，也要有一个集合存储，这里我们用 <code>Set</code>，因为其实我们不需要获取某个下标的内容，更需要承担一个增删压力</p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DelayQueue</span> </span>&#123;
+  #timer = new Timer();
+
+  #queue = new Set();
+&#125;</code></pre></div>
+
+<p>这个队列的核心 api 就是添加任务了，顺便可以定一个简单的任务实例结构</p>
+<div class="hljs"><pre><code class="hljs typescript"><span class="hljs-keyword">interface</span> Task &#123;
+  delay: <span class="hljs-built_in">number</span>;
+  run(): unknown;
+&#125;</code></pre></div>
+
+<p>然后可以添加任务，添加任务时记得要获取定时器的已过时间并抹平，并且如果新增的任务延时不超过现在剩余时间，那就是说我们当前定时器还可以用，就不需要重新开启</p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DelayQueue</span> </span>&#123;
+  add(run, delay = <span class="hljs-number">0</span>) &#123;
+    this.#queue.add(&#123;
+      run,
+      delay: delay + this.#timer.passedTime,
+    &#125;);
+    if (this.#timer.restTime &gt; delay || !this.active) &#123;
+      this.#setSchedule();
+    &#125;
+  &#125;
+&#125;</code></pre></div>
+
+<p>开启定时任务的方法，我们需要绑定回调的同时，需要有一个抹平当前时间的 api，并且能返回当前任务队列中最近的任务延时</p>
+<p>而为什么需要抹平，上面也已经说过了，当一个回调完成后，当前队列中任务还是以上一个为基准的，那我们需要把基准时间修改，并同时作用于所有集合内的任务</p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DelayQueue</span> </span>&#123;
+  #refreshRestTime() &#123;
+    <span class="hljs-keyword">let</span> minDelay = <span class="hljs-literal">null</span>;
+    const passedTime = this.#timer.passedTime;
+    this.#queue.forEach(item =&gt; &#123;
+      item.delay -= passedTime;
+      <span class="hljs-keyword">if</span> (minDelay === <span class="hljs-literal">null</span> || minDelay &gt; item.delay) &#123;
+        minDelay = item.delay;
+      &#125;
+    &#125;);
+    <span class="hljs-keyword">return</span> minDelay;
+  &#125;
+
+  #setSchedule() &#123;
+    const delay = this.#refreshRestTime();
+    <span class="hljs-built_in">Promise</span>.resolve().then(<span class="hljs-function">() =&gt;</span> &#123;
+      this.#timer.set(() =&gt; &#123;
+        this.#resolveTask();
+      &#125;, delay);
+    &#125;);
+  &#125;
+&#125;</code></pre></div>
+
+<p>ok，到这里回调就很简单了，无非就是找到并且调用，然后出列，最后再重新启动即可</p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DelayQueue</span> </span>&#123;
+  #getClosestTasks() &#123;
+    <span class="hljs-keyword">let</span> results = [];
+    <span class="hljs-keyword">let</span> minDelay = <span class="hljs-literal">null</span>;
+
+    this.#queue.forEach(item =&gt; &#123;
+      <span class="hljs-keyword">if</span> (minDelay === <span class="hljs-literal">null</span> || minDelay &gt; item.delay) &#123;
+        minDelay = item.delay;
+        results = [item];
+      &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (minDelay === item.delay) &#123;
+        results.push(item);
+      &#125;
+    &#125;);
+
+    <span class="hljs-keyword">return</span> [results, minDelay];
+  &#125;
+
+  #resolveTask() &#123;
+    const [results] = this.#getClosestTasks();
+    results.forEach(<span class="hljs-function"><span class="hljs-params">task</span> =&gt;</span> &#123;
+      this.#queue.delete(task);
+      task.run();
+    &#125;);
+    if (this.#queue.size) &#123;
+      this.#setSchedule();
+    &#125;
+  &#125;
+&#125;</code></pre></div>
+
+<p>最后写个简单的测试用例，包含先进后跑，后进先跑，先进先跑，后进后跑的场景</p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-keyword">const</span> $$log = <span class="hljs-function">(<span class="hljs-params">...msg</span>) =&gt;</span> <span class="hljs-built_in">console</span>.log(<span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>().toTimeString(), ...msg);
+<span class="hljs-keyword">const</span> queue = <span class="hljs-keyword">new</span> DelayQueue();
+
+<span class="hljs-keyword">const</span> start = <span class="hljs-built_in">Date</span>.now();
+$$log(<span class="hljs-number">1</span>);
+<span class="hljs-built_in">setTimeout</span>(<span class="hljs-function">() =&gt;</span> &#123;
+  queue.add(<span class="hljs-function">() =&gt;</span> $$log(<span class="hljs-string">&#x27;1000ms&#x27;</span>, <span class="hljs-built_in">Date</span>.now() - start), <span class="hljs-number">1000</span>);
+&#125;, <span class="hljs-number">0</span>);
+<span class="hljs-built_in">setTimeout</span>(<span class="hljs-function">() =&gt;</span> &#123;
+  queue.add(<span class="hljs-function">() =&gt;</span> $$log(<span class="hljs-string">&#x27;1500ms&#x27;</span>, <span class="hljs-built_in">Date</span>.now() - start), <span class="hljs-number">1000</span>);
+&#125;, <span class="hljs-number">500</span>);
+<span class="hljs-built_in">setTimeout</span>(<span class="hljs-function">() =&gt;</span> &#123;
+  queue.add(<span class="hljs-function">() =&gt;</span> $$log(<span class="hljs-string">&#x27;1500ms&#x27;</span>, <span class="hljs-built_in">Date</span>.now() - start), <span class="hljs-number">500</span>);
+&#125;, <span class="hljs-number">1000</span>);
+<span class="hljs-built_in">setTimeout</span>(<span class="hljs-function">() =&gt;</span> &#123;
+  queue.add(<span class="hljs-function">() =&gt;</span> $$log(<span class="hljs-string">&#x27;800ms&#x27;</span>, <span class="hljs-built_in">Date</span>.now() - start), <span class="hljs-number">500</span>);
+&#125;, <span class="hljs-number">300</span>);
+<span class="hljs-built_in">setTimeout</span>(<span class="hljs-function">() =&gt;</span> &#123;
+  queue.add(<span class="hljs-function">() =&gt;</span> $$log(<span class="hljs-string">&#x27;3100ms&#x27;</span>, <span class="hljs-built_in">Date</span>.now() - start), <span class="hljs-number">100</span>);
+&#125;, <span class="hljs-number">3000</span>);
+<span class="hljs-built_in">setTimeout</span>(<span class="hljs-function">() =&gt;</span> &#123;
+  queue.add(<span class="hljs-function">() =&gt;</span> $$log(<span class="hljs-string">&#x27;2600ms&#x27;</span>, <span class="hljs-built_in">Date</span>.now() - start), <span class="hljs-number">2500</span>);
+&#125;, <span class="hljs-number">100</span>);
+<span class="hljs-built_in">setTimeout</span>(<span class="hljs-function">() =&gt;</span> &#123;
+  queue.add(<span class="hljs-function">() =&gt;</span> $$log(<span class="hljs-string">&#x27;1000ms&#x27;</span>, <span class="hljs-built_in">Date</span>.now() - start), <span class="hljs-number">500</span>);
+&#125;, <span class="hljs-number">500</span>);</code></pre></div>
+
+<p>最后附上 <strong><a target="_blank" rel="noopener" href="https://github.com/ben-lau/blog/blob/master/assets/script/DelayQueue.js">完整代码</a></strong></p>
+<p>总结一下就是，其实写多个 setTimeout 会更简单，只需要存储创建任务对象即可，但是多学习总归没有错的。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/Javascript/">Javascript</a>
+                    
+                      <a class="hover-with-bg" href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/node%E6%98%AF%E5%A6%82%E4%BD%95%E5%90%8C%E6%AD%A5%E5%86%99%E5%85%A5%E6%96%87%E4%BB%B6%E7%9A%84/">
+                        <span class="hidden-mobile">node是如何同步写入文件的</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2"></div>
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <!-- <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
+    </div> -->
+    
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            
+            <span id="busuanzi_value_site_pv"></span>
+             
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            
+            <span id="busuanzi_value_site_uv"></span>
+             
+          </span>
+      
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="/js/debouncer.js" ></script>
+<script  src="/js/main.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '#post-body',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        collapseDepth: 0,
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc').css('visibility', 'visible');
+      }
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "如何用一个定时器做延时队列&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "left",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      searchFunc(path, 'local-search-input', 'local-search-result');
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <script>
+    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
+      function () {
+        var element = document.createElement('a');
+        $(element).attr('data-fancybox', 'images');
+        $(element).attr('href', $(this).attr('src'));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

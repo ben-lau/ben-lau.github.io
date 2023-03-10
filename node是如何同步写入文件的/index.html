@@ -1,0 +1,1146 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/images/weather.png">
+  <link rel="icon" type="image/png" href="/images/weather.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="Ben Lau">
+  <meta name="keywords" content="">
+  <title>node是如何同步写入文件的 - Ben Lau&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/atom-one-dark.min.css" />
+    
+  
+
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_pf9vaxs7x7b.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.1.1"></head>
+
+
+<body>
+  <header style="height: 80vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Ben Lau's space</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/images/bg-forest-green.jpeg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container page-header text-center fade-in-up">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2022-08-24 16:52" pubdate>
+        2022年8月24日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      3.5k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      86
+       分钟
+    </span>
+  
+
+  
+  
+    
+      <!-- 不蒜子统计文章PV -->
+      <span id="busuanzi_container_page_pv" style="display: none">
+        <i class="iconfont icon-eye" aria-hidden="true"></i>
+        <span id="busuanzi_value_page_pv"></span> 次
+      </span>
+    
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    
+      <div class="d-none d-lg-block col-lg-2 ml-3 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto" id="post">
+            <!-- SEO header -->
+            <h1 style="display: none">node是如何同步写入文件的</h1>
+            
+              <p class="note note-info">
+                
+                  本文最后更新于：7 分钟前
+                
+              </p>
+            
+            <div class="markdown-body" id="post-body">
+              <h1 id="node-是如何同步写入文件的"><a href="#node-是如何同步写入文件的" class="headerlink" title="node 是如何同步写入文件的"></a>node 是如何同步写入文件的</h1><p>最近在知乎上被邀请了一个问题，觉得比较有趣就试着回答了一下。</p>
+<p>众所周知，nodejs 的 io 是非阻塞模型，但是还提供了同步接口，这一点确实有趣，那到底是怎么实现这些文件写入的呢？</p>
+<p><strong>以下的源码都是基于 node 16.17.0</strong></p>
+<h2 id="node-部分"><a href="#node-部分" class="headerlink" title="node 部分"></a>node 部分</h2><p>我们知道 fs 中写入文件的 api: <code>writeFile</code>和<code>writeFileSync</code>，那他们到底做了什么呢，我们可以先看源码：<a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/lib/fs.js">都在这</a></p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * Asynchronously writes data to the file.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;string | Buffer | URL | number&#125;</span> <span class="hljs-variable">path</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;string | Buffer | TypedArray | DataView | object&#125;</span> <span class="hljs-variable">data</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;&#123;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   encoding?: string | null;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   mode?: number;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   flag?: string;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   signal?: AbortSignal;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   &#125;</span> </span>| string&#125; [options]</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;(err?: Error) =&gt; any&#125;</span> <span class="hljs-variable">callback</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@returns <span class="hljs-type">&#123;void&#125;</span></span></span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">writeFile</span>(<span class="hljs-params">path, data, options, callback</span>) </span>&#123;
+  callback = maybeCallback(callback || options);
+  options = getOptions(options, &#123; <span class="hljs-attr">encoding</span>: <span class="hljs-string">&#x27;utf8&#x27;</span>, <span class="hljs-attr">mode</span>: <span class="hljs-number">0o666</span>, <span class="hljs-attr">flag</span>: <span class="hljs-string">&#x27;w&#x27;</span> &#125;);
+  <span class="hljs-keyword">const</span> flag = options.flag || <span class="hljs-string">&#x27;w&#x27;</span>;
+
+  <span class="hljs-keyword">if</span> (!isArrayBufferView(data)) &#123;
+    validateStringAfterArrayBufferView(data, <span class="hljs-string">&#x27;data&#x27;</span>);
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> data !== <span class="hljs-string">&#x27;string&#x27;</span>) &#123;
+      showStringCoercionDeprecation();
+    &#125;
+    data = Buffer.from(<span class="hljs-built_in">String</span>(data), options.encoding || <span class="hljs-string">&#x27;utf8&#x27;</span>);
+  &#125;
+
+  <span class="hljs-keyword">if</span> (isFd(path)) &#123;
+    <span class="hljs-keyword">const</span> isUserFd = <span class="hljs-literal">true</span>;
+    <span class="hljs-keyword">const</span> signal = options.signal;
+    writeAll(path, isUserFd, data, <span class="hljs-number">0</span>, data.byteLength, signal, callback);
+    <span class="hljs-keyword">return</span>;
+  &#125;
+
+  <span class="hljs-keyword">if</span> (checkAborted(options.signal, callback)) <span class="hljs-keyword">return</span>;
+
+  fs.open(path, flag, options.mode, <span class="hljs-function">(<span class="hljs-params">openErr, fd</span>) =&gt;</span> &#123;
+    <span class="hljs-keyword">if</span> (openErr) &#123;
+      callback(openErr);
+    &#125; <span class="hljs-keyword">else</span> &#123;
+      <span class="hljs-keyword">const</span> isUserFd = <span class="hljs-literal">false</span>;
+      <span class="hljs-keyword">const</span> signal = options.signal;
+      writeAll(fd, isUserFd, data, <span class="hljs-number">0</span>, data.byteLength, signal, callback);
+    &#125;
+  &#125;);
+&#125;
+
+<span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * Synchronously writes data to the file.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;string | Buffer | URL | number&#125;</span> <span class="hljs-variable">path</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;string | Buffer | TypedArray | DataView | object&#125;</span> <span class="hljs-variable">data</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;&#123;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   encoding?: string | null;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   mode?: number;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   flag?: string;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   &#125;</span> </span>| string&#125; [options]</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@returns <span class="hljs-type">&#123;void&#125;</span></span></span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">writeFileSync</span>(<span class="hljs-params">path, data, options</span>) </span>&#123;
+  options = getOptions(options, &#123; <span class="hljs-attr">encoding</span>: <span class="hljs-string">&#x27;utf8&#x27;</span>, <span class="hljs-attr">mode</span>: <span class="hljs-number">0o666</span>, <span class="hljs-attr">flag</span>: <span class="hljs-string">&#x27;w&#x27;</span> &#125;);
+
+  <span class="hljs-keyword">if</span> (!isArrayBufferView(data)) &#123;
+    validateStringAfterArrayBufferView(data, <span class="hljs-string">&#x27;data&#x27;</span>);
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> data !== <span class="hljs-string">&#x27;string&#x27;</span>) &#123;
+      showStringCoercionDeprecation();
+    &#125;
+    data = Buffer.from(<span class="hljs-built_in">String</span>(data), options.encoding || <span class="hljs-string">&#x27;utf8&#x27;</span>);
+  &#125;
+
+  <span class="hljs-keyword">const</span> flag = options.flag || <span class="hljs-string">&#x27;w&#x27;</span>;
+
+  <span class="hljs-keyword">const</span> isUserFd = isFd(path); <span class="hljs-comment">// File descriptor ownership</span>
+  <span class="hljs-keyword">const</span> fd = isUserFd ? path : fs.openSync(path, flag, options.mode);
+
+  <span class="hljs-keyword">let</span> offset = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">let</span> length = data.byteLength;
+  <span class="hljs-keyword">try</span> &#123;
+    <span class="hljs-keyword">while</span> (length &gt; <span class="hljs-number">0</span>) &#123;
+      <span class="hljs-keyword">const</span> written = fs.writeSync(fd, data, offset, length);
+      offset += written;
+      length -= written;
+    &#125;
+  &#125; <span class="hljs-keyword">finally</span> &#123;
+    <span class="hljs-keyword">if</span> (!isUserFd) fs.closeSync(fd);
+  &#125;
+&#125;
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">writeAll</span>(<span class="hljs-params">fd, isUserFd, buffer, offset, length, signal, callback</span>) </span>&#123;
+  <span class="hljs-keyword">if</span> (signal?.aborted) &#123;
+    <span class="hljs-keyword">const</span> abortError = <span class="hljs-keyword">new</span> AbortError(<span class="hljs-literal">undefined</span>, &#123; <span class="hljs-attr">cause</span>: signal?.reason &#125;);
+    <span class="hljs-keyword">if</span> (isUserFd) &#123;
+      callback(abortError);
+    &#125; <span class="hljs-keyword">else</span> &#123;
+      fs.close(fd, <span class="hljs-function"><span class="hljs-params">err</span> =&gt;</span> &#123;
+        callback(aggregateTwoErrors(err, abortError));
+      &#125;);
+    &#125;
+    <span class="hljs-keyword">return</span>;
+  &#125;
+  <span class="hljs-comment">// write(fd, buffer, offset, length, position, callback)</span>
+  fs.write(fd, buffer, offset, length, <span class="hljs-literal">null</span>, <span class="hljs-function">(<span class="hljs-params">writeErr, written</span>) =&gt;</span> &#123;
+    <span class="hljs-keyword">if</span> (writeErr) &#123;
+      <span class="hljs-keyword">if</span> (isUserFd) &#123;
+        callback(writeErr);
+      &#125; <span class="hljs-keyword">else</span> &#123;
+        fs.close(fd, <span class="hljs-function"><span class="hljs-params">err</span> =&gt;</span> &#123;
+          callback(aggregateTwoErrors(err, writeErr));
+        &#125;);
+      &#125;
+    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (written === length) &#123;
+      <span class="hljs-keyword">if</span> (isUserFd) &#123;
+        callback(<span class="hljs-literal">null</span>);
+      &#125; <span class="hljs-keyword">else</span> &#123;
+        fs.close(fd, callback);
+      &#125;
+    &#125; <span class="hljs-keyword">else</span> &#123;
+      offset += written;
+      length -= written;
+      writeAll(fd, isUserFd, buffer, offset, length, signal, callback);
+    &#125;
+  &#125;);
+&#125;</code></pre></div>
+
+<p>可以看到 <code>writFileSync</code> 中实际上是调用 <code>writeSync</code>，而 <code>writeFile</code> 内部调用了异步 <code>open</code> 里面用了一个递归函数 <code>writeAll</code>，最终是调用 <code>write</code> 函数。</p>
+<p>然后再看看 <a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/lib/fs.js#L822">write</a> 和 <a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/lib/fs.js#L897">writeSync</a></p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * Writes `buffer` to the specified `fd` (file descriptor).</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;number&#125;</span> <span class="hljs-variable">fd</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;Buffer | TypedArray | DataView | string | object&#125;</span> <span class="hljs-variable">buffer</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;number | object&#125;</span> </span>[offsetOrOptions]</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;number&#125;</span> </span>[length]</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;number | null&#125;</span> </span>[position]</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;(</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   err?: Error,</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   bytesWritten?: number;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   buffer?: Buffer | TypedArray | DataView</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   ) =&gt; any&#125;</span> <span class="hljs-variable">callback</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@returns <span class="hljs-type">&#123;void&#125;</span></span></span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">write</span>(<span class="hljs-params">fd, buffer, offsetOrOptions, length, position, callback</span>) </span>&#123;
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">wrapper</span>(<span class="hljs-params">err, written</span>) </span>&#123;
+    <span class="hljs-comment">// Retain a reference to buffer so that it can&#x27;t be GC&#x27;ed too soon.</span>
+    callback(err, written || <span class="hljs-number">0</span>, buffer);
+  &#125;
+
+  fd = getValidatedFd(fd);
+
+  <span class="hljs-keyword">let</span> offset = offsetOrOptions;
+  <span class="hljs-keyword">if</span> (isArrayBufferView(buffer)) &#123;
+    callback = maybeCallback(callback || position || length || offset);
+
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> offset === <span class="hljs-string">&#x27;object&#x27;</span>) &#123;
+      (&#123;
+        offset = <span class="hljs-number">0</span>,
+        length = buffer.byteLength - offset,
+        position = <span class="hljs-literal">null</span>,
+      &#125; = offsetOrOptions ?? kEmptyObject);
+    &#125;
+
+    <span class="hljs-keyword">if</span> (offset == <span class="hljs-literal">null</span> || <span class="hljs-keyword">typeof</span> offset === <span class="hljs-string">&#x27;function&#x27;</span>) &#123;
+      offset = <span class="hljs-number">0</span>;
+    &#125; <span class="hljs-keyword">else</span> &#123;
+      validateInteger(offset, <span class="hljs-string">&#x27;offset&#x27;</span>, <span class="hljs-number">0</span>);
+    &#125;
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> length !== <span class="hljs-string">&#x27;number&#x27;</span>) length = buffer.byteLength - offset;
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> position !== <span class="hljs-string">&#x27;number&#x27;</span>) position = <span class="hljs-literal">null</span>;
+    validateOffsetLengthWrite(offset, length, buffer.byteLength);
+
+    <span class="hljs-keyword">const</span> req = <span class="hljs-keyword">new</span> FSReqCallback();
+    req.oncomplete = wrapper;
+    <span class="hljs-keyword">return</span> binding.writeBuffer(fd, buffer, offset, length, position, req);
+  &#125;
+
+  validateStringAfterArrayBufferView(buffer, <span class="hljs-string">&#x27;buffer&#x27;</span>);
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> buffer !== <span class="hljs-string">&#x27;string&#x27;</span>) &#123;
+    showStringCoercionDeprecation();
+  &#125;
+
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> position !== <span class="hljs-string">&#x27;function&#x27;</span>) &#123;
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> offset === <span class="hljs-string">&#x27;function&#x27;</span>) &#123;
+      position = offset;
+      offset = <span class="hljs-literal">null</span>;
+    &#125; <span class="hljs-keyword">else</span> &#123;
+      position = length;
+    &#125;
+    length = <span class="hljs-string">&#x27;utf8&#x27;</span>;
+  &#125;
+
+  <span class="hljs-keyword">const</span> str = <span class="hljs-built_in">String</span>(buffer);
+  validateEncoding(str, length);
+  callback = maybeCallback(position);
+
+  <span class="hljs-keyword">const</span> req = <span class="hljs-keyword">new</span> FSReqCallback();
+  req.oncomplete = wrapper;
+  <span class="hljs-keyword">return</span> binding.writeString(fd, str, offset, length, req);
+&#125;
+
+ObjectDefineProperty(write, kCustomPromisifyArgsSymbol, &#123;
+  __proto__: <span class="hljs-literal">null</span>,
+  value: [<span class="hljs-string">&#x27;bytesWritten&#x27;</span>, <span class="hljs-string">&#x27;buffer&#x27;</span>],
+  enumerable: <span class="hljs-literal">false</span>,
+&#125;);
+
+<span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * Synchronously writes `buffer` to the</span>
+<span class="hljs-comment"> * specified `fd` (file descriptor).</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;number&#125;</span> <span class="hljs-variable">fd</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;Buffer | TypedArray | DataView | string&#125;</span> <span class="hljs-variable">buffer</span></span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param <span class="hljs-type">&#123;&#123;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   offset?: number;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   length?: number;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   position?: number | null;</span></span></span>
+<span class="hljs-comment"><span class="hljs-doctag"><span class="hljs-type"> *   &#125;</span></span>&#125; [offsetOrOptions]</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@returns <span class="hljs-type">&#123;number&#125;</span></span></span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">writeSync</span>(<span class="hljs-params">fd, buffer, offsetOrOptions, length, position</span>) </span>&#123;
+  fd = getValidatedFd(fd);
+  <span class="hljs-keyword">const</span> ctx = &#123;&#125;;
+  <span class="hljs-keyword">let</span> result;
+
+  <span class="hljs-keyword">let</span> offset = offsetOrOptions;
+  <span class="hljs-keyword">if</span> (isArrayBufferView(buffer)) &#123;
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> offset === <span class="hljs-string">&#x27;object&#x27;</span>) &#123;
+      (&#123;
+        offset = <span class="hljs-number">0</span>,
+        length = buffer.byteLength - offset,
+        position = <span class="hljs-literal">null</span>,
+      &#125; = offsetOrOptions ?? kEmptyObject);
+    &#125;
+    <span class="hljs-keyword">if</span> (position === <span class="hljs-literal">undefined</span>) position = <span class="hljs-literal">null</span>;
+    <span class="hljs-keyword">if</span> (offset == <span class="hljs-literal">null</span>) &#123;
+      offset = <span class="hljs-number">0</span>;
+    &#125; <span class="hljs-keyword">else</span> &#123;
+      validateInteger(offset, <span class="hljs-string">&#x27;offset&#x27;</span>, <span class="hljs-number">0</span>);
+    &#125;
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> length !== <span class="hljs-string">&#x27;number&#x27;</span>) length = buffer.byteLength - offset;
+    validateOffsetLengthWrite(offset, length, buffer.byteLength);
+    result = binding.writeBuffer(
+      fd,
+      buffer,
+      offset,
+      length,
+      position,
+      <span class="hljs-literal">undefined</span>,
+      ctx
+    );
+  &#125; <span class="hljs-keyword">else</span> &#123;
+    validatePrimitiveStringAfterArrayBufferView(buffer, <span class="hljs-string">&#x27;buffer&#x27;</span>);
+    validateEncoding(buffer, length);
+
+    <span class="hljs-keyword">if</span> (offset === <span class="hljs-literal">undefined</span>) offset = <span class="hljs-literal">null</span>;
+    result = binding.writeString(fd, buffer, offset, length, <span class="hljs-literal">undefined</span>, ctx);
+  &#125;
+  handleErrorFromBinding(ctx);
+  <span class="hljs-keyword">return</span> result;
+&#125;</code></pre></div>
+
+<p>其实最终都是调用 <code>binding.writeBuffer</code> 和 <code>binding.writeString</code>，区别在于参数，在异步 <code>wirte</code> 中实际上多了一个请求回调对象，而这个请求对象是由 c++模块导出，<a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/src/node_file.cc#L606">这个可以先了解一下</a></p>
+<div class="hljs"><pre><code class="hljs javascript"><span class="hljs-keyword">const</span> req = <span class="hljs-keyword">new</span> FSReqCallback();
+req.oncomplete = wrapper;</code></pre></div>
+
+<p>以同步调用的 <code>writeSync</code> 为例子，<code>writeBuffer</code> 和 <code>writeString</code> 的第六、第五个参数是 undefined；而 <code>write</code> 中，<code>writeBuffer</code> 就把 <code>req</code> 传进了第六个参数中，这里是一个细节</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/node-io-details.jpeg" srcset="/img/loading.gif" alt="一个细节"></p>
+<p>到这里为止，都是 js 范畴</p>
+<p>然后也应该清楚 <code>writeFile</code>、<code>writeFileSync</code> 内部调用 <code>write</code>、<code>writeFile</code>，而他们最终其实调用了 <code>binding.writeBuffer</code> 或者 <code>binding.writeString</code>。</p>
+<p>而<code>binding</code> 是 js 和 c++中间的桥梁，用于给 js 上层提供 api，所以下面就开始 c++模块部分了。</p>
+<h2 id="C-部分"><a href="#C-部分" class="headerlink" title="C++ 部分"></a>C++ 部分</h2><p>在 <a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/src/node_file.cc#L2462">node_file.cc</a> 中定义对外的 api 命名</p>
+<div class="hljs"><pre><code class="hljs cpp">SetMethod(context, target, <span class="hljs-string">&quot;writeBuffer&quot;</span>, WriteBuffer);
+SetMethod(context, target, <span class="hljs-string">&quot;writeString&quot;</span>, WriteString);</code></pre></div>
+
+<p>在 <a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/src/node_file.cc#L1802">writeBuffer</a> 中，判断了第 6 个参数请求回调对象是否存在决定是否异步</p>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">WriteBuffer</span><span class="hljs-params">(<span class="hljs-keyword">const</span> FunctionCallbackInfo&lt;Value&gt;&amp; args)</span> </span>&#123;
+  Environment* env = Environment::GetCurrent(args);
+
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> argc = args.Length();
+  CHECK_GE(argc, <span class="hljs-number">4</span>);
+
+  CHECK(args[<span class="hljs-number">0</span>]-&gt;IsInt32());
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> fd = args[<span class="hljs-number">0</span>].As&lt;Int32&gt;()-&gt;Value();
+
+  CHECK(Buffer::HasInstance(args[<span class="hljs-number">1</span>]));
+  Local&lt;Object&gt; buffer_obj = args[<span class="hljs-number">1</span>].As&lt;Object&gt;();
+  <span class="hljs-keyword">char</span>* buffer_data = Buffer::Data(buffer_obj);
+  <span class="hljs-keyword">size_t</span> buffer_length = Buffer::Length(buffer_obj);
+
+  CHECK(IsSafeJsInt(args[<span class="hljs-number">2</span>]));
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">int64_t</span> off_64 = args[<span class="hljs-number">2</span>].As&lt;Integer&gt;()-&gt;Value();
+  CHECK_GE(off_64, <span class="hljs-number">0</span>);
+  CHECK_LE(<span class="hljs-keyword">static_cast</span>&lt;<span class="hljs-keyword">uint64_t</span>&gt;(off_64), buffer_length);
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">size_t</span> off = <span class="hljs-keyword">static_cast</span>&lt;<span class="hljs-keyword">size_t</span>&gt;(off_64);
+
+  CHECK(args[<span class="hljs-number">3</span>]-&gt;IsInt32());
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">size_t</span> len = <span class="hljs-keyword">static_cast</span>&lt;<span class="hljs-keyword">size_t</span>&gt;(args[<span class="hljs-number">3</span>].As&lt;Int32&gt;()-&gt;Value());
+  CHECK(Buffer::IsWithinBounds(off, len, buffer_length));
+  CHECK_LE(len, buffer_length);
+  CHECK_GE(off + len, off);
+
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">int64_t</span> pos = GetOffset(args[<span class="hljs-number">4</span>]);
+
+  <span class="hljs-keyword">char</span>* buf = buffer_data + off;
+  <span class="hljs-keyword">uv_buf_t</span> uvbuf = uv_buf_init(buf, len);
+
+  FSReqBase* req_wrap_async = GetReqWrap(args, <span class="hljs-number">5</span>);
+  <span class="hljs-keyword">if</span> (req_wrap_async != <span class="hljs-literal">nullptr</span>) &#123;  <span class="hljs-comment">// write(fd, buffer, off, len, pos, req)</span>
+    AsyncCall(env, req_wrap_async, args, <span class="hljs-string">&quot;write&quot;</span>, UTF8, AfterInteger,
+              uv_fs_write, fd, &amp;uvbuf, <span class="hljs-number">1</span>, pos);
+  &#125; <span class="hljs-keyword">else</span> &#123;  <span class="hljs-comment">// write(fd, buffer, off, len, pos, undefined, ctx)</span>
+    CHECK_EQ(argc, <span class="hljs-number">7</span>);
+    FSReqWrapSync req_wrap_sync;
+    FS_SYNC_TRACE_BEGIN(write);
+    <span class="hljs-keyword">int</span> bytesWritten = SyncCall(env, args[<span class="hljs-number">6</span>], &amp;req_wrap_sync, <span class="hljs-string">&quot;write&quot;</span>,
+                                uv_fs_write, fd, &amp;uvbuf, <span class="hljs-number">1</span>, pos);
+    FS_SYNC_TRACE_END(write, <span class="hljs-string">&quot;bytesWritten&quot;</span>, bytesWritten);
+    args.GetReturnValue().Set(bytesWritten);
+  &#125;
+&#125;</code></pre></div>
+
+<p><a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/src/node_file.cc#L1902">writeString</a> 则判断了第五个参数请求回调对象是否存在，而确定是否用异步</p>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">WriteString</span><span class="hljs-params">(<span class="hljs-keyword">const</span> FunctionCallbackInfo&lt;Value&gt;&amp; args)</span> </span>&#123;
+  Environment* env = Environment::GetCurrent(args);
+  Isolate* isolate = env-&gt;isolate();
+
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> argc = args.Length();
+  CHECK_GE(argc, <span class="hljs-number">4</span>);
+
+  CHECK(args[<span class="hljs-number">0</span>]-&gt;IsInt32());
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> fd = args[<span class="hljs-number">0</span>].As&lt;Int32&gt;()-&gt;Value();
+
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">int64_t</span> pos = GetOffset(args[<span class="hljs-number">2</span>]);
+
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">auto</span> enc = ParseEncoding(isolate, args[<span class="hljs-number">3</span>], UTF8);
+
+  Local&lt;Value&gt; value = args[<span class="hljs-number">1</span>];
+  <span class="hljs-keyword">char</span>* buf = <span class="hljs-literal">nullptr</span>;
+  <span class="hljs-keyword">size_t</span> len;
+
+  FSReqBase* req_wrap_async = GetReqWrap(args, <span class="hljs-number">4</span>);
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">bool</span> is_async = req_wrap_async != <span class="hljs-literal">nullptr</span>;
+
+  <span class="hljs-comment">// Avoid copying the string when it is externalized but only when:</span>
+  <span class="hljs-comment">// 1. The target encoding is compatible with the string&#x27;s encoding, and</span>
+  <span class="hljs-comment">// 2. The write is synchronous, otherwise the string might get neutered</span>
+  <span class="hljs-comment">//    while the request is in flight, and</span>
+  <span class="hljs-comment">// 3. For UCS2, when the host system is little-endian.  Big-endian systems</span>
+  <span class="hljs-comment">//    need to call StringBytes::Write() to ensure proper byte swapping.</span>
+  <span class="hljs-comment">// The const_casts are conceptually sound: memory is read but not written.</span>
+  <span class="hljs-keyword">if</span> (!is_async &amp;&amp; value-&gt;IsString()) &#123;
+    <span class="hljs-keyword">auto</span> <span class="hljs-built_in">string</span> = value.As&lt;String&gt;();
+    <span class="hljs-keyword">if</span> ((enc == ASCII || enc == LATIN1) &amp;&amp; <span class="hljs-built_in">string</span>-&gt;IsExternalOneByte()) &#123;
+      <span class="hljs-keyword">auto</span> ext = <span class="hljs-built_in">string</span>-&gt;GetExternalOneByteStringResource();
+      buf = <span class="hljs-keyword">const_cast</span>&lt;<span class="hljs-keyword">char</span>*&gt;(ext-&gt;data());
+      len = ext-&gt;length();
+    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (enc == UCS2 &amp;&amp; IsLittleEndian() &amp;&amp; <span class="hljs-built_in">string</span>-&gt;IsExternalTwoByte()) &#123;
+      <span class="hljs-keyword">auto</span> ext = <span class="hljs-built_in">string</span>-&gt;GetExternalStringResource();
+      buf = <span class="hljs-keyword">reinterpret_cast</span>&lt;<span class="hljs-keyword">char</span>*&gt;(<span class="hljs-keyword">const_cast</span>&lt;<span class="hljs-keyword">uint16_t</span>*&gt;(ext-&gt;data()));
+      len = ext-&gt;length() * <span class="hljs-keyword">sizeof</span>(*ext-&gt;data());
+    &#125;
+  &#125;
+
+  <span class="hljs-keyword">if</span> (is_async) &#123;  <span class="hljs-comment">// write(fd, string, pos, enc, req)</span>
+    CHECK_NOT_NULL(req_wrap_async);
+    <span class="hljs-keyword">if</span> (!StringBytes::StorageSize(isolate, value, enc).To(&amp;len)) <span class="hljs-keyword">return</span>;
+    FSReqBase::FSReqBuffer&amp; stack_buffer =
+        req_wrap_async-&gt;Init(<span class="hljs-string">&quot;write&quot;</span>, len, enc);
+    <span class="hljs-comment">// StorageSize may return too large a char, so correct the actual length</span>
+    <span class="hljs-comment">// by the write size</span>
+    len = StringBytes::Write(isolate, *stack_buffer, len, args[<span class="hljs-number">1</span>], enc);
+    stack_buffer.SetLengthAndZeroTerminate(len);
+    <span class="hljs-keyword">uv_buf_t</span> uvbuf = uv_buf_init(*stack_buffer, len);
+    <span class="hljs-keyword">int</span> err = req_wrap_async-&gt;Dispatch(uv_fs_write,
+                                       fd,
+                                       &amp;uvbuf,
+                                       <span class="hljs-number">1</span>,
+                                       pos,
+                                       AfterInteger);
+    <span class="hljs-keyword">if</span> (err &lt; <span class="hljs-number">0</span>) &#123;
+      <span class="hljs-keyword">uv_fs_t</span>* uv_req = req_wrap_async-&gt;req();
+      uv_req-&gt;result = err;
+      uv_req-&gt;path = <span class="hljs-literal">nullptr</span>;
+      AfterInteger(uv_req);  <span class="hljs-comment">// after may delete req_wrap_async if there is</span>
+                             <span class="hljs-comment">// an error</span>
+    &#125; <span class="hljs-keyword">else</span> &#123;
+      req_wrap_async-&gt;SetReturnValue(args);
+    &#125;
+  &#125; <span class="hljs-keyword">else</span> &#123;  <span class="hljs-comment">// write(fd, string, pos, enc, undefined, ctx)</span>
+    CHECK_EQ(argc, <span class="hljs-number">6</span>);
+    FSReqWrapSync req_wrap_sync;
+    FSReqBase::FSReqBuffer stack_buffer;
+    <span class="hljs-keyword">if</span> (buf == <span class="hljs-literal">nullptr</span>) &#123;
+      <span class="hljs-keyword">if</span> (!StringBytes::StorageSize(isolate, value, enc).To(&amp;len))
+        <span class="hljs-keyword">return</span>;
+      stack_buffer.AllocateSufficientStorage(len + <span class="hljs-number">1</span>);
+      <span class="hljs-comment">// StorageSize may return too large a char, so correct the actual length</span>
+      <span class="hljs-comment">// by the write size</span>
+      len = StringBytes::Write(isolate, *stack_buffer,
+                               len, args[<span class="hljs-number">1</span>], enc);
+      stack_buffer.SetLengthAndZeroTerminate(len);
+      buf = *stack_buffer;
+    &#125;
+    <span class="hljs-keyword">uv_buf_t</span> uvbuf = uv_buf_init(buf, len);
+    FS_SYNC_TRACE_BEGIN(write);
+    <span class="hljs-keyword">int</span> bytesWritten = SyncCall(env, args[<span class="hljs-number">5</span>], &amp;req_wrap_sync, <span class="hljs-string">&quot;write&quot;</span>,
+                                uv_fs_write, fd, &amp;uvbuf, <span class="hljs-number">1</span>, pos);
+    FS_SYNC_TRACE_END(write, <span class="hljs-string">&quot;bytesWritten&quot;</span>, bytesWritten);
+    args.GetReturnValue().Set(bytesWritten);
+  &#125;
+&#125;</code></pre></div>
+
+<p>也就是说在 fs 模块中，用回调函数是否存在判断了本次调用是异步还是同步，然后分别调用 AsyncCall 和 SyncCall。后面我们可以看看这两个是什么：</p>
+<p>SyncCall:</p>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> Func, <span class="hljs-keyword">typename</span>... Args&gt;
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">SyncCall</span><span class="hljs-params">(Environment* env, v8::Local&lt;v8::Value&gt; ctx,</span></span>
+<span class="hljs-function"><span class="hljs-params">             FSReqWrapSync* req_wrap, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* syscall,</span></span>
+<span class="hljs-function"><span class="hljs-params">             Func fn, Args... args)</span> </span>&#123;
+  env-&gt;PrintSyncTrace();
+  <span class="hljs-keyword">int</span> err = fn(env-&gt;event_loop(), &amp;(req_wrap-&gt;req), args..., <span class="hljs-literal">nullptr</span>);
+  <span class="hljs-keyword">if</span> (err &lt; <span class="hljs-number">0</span>) &#123;
+    v8::Local&lt;v8::Context&gt; context = env-&gt;context();
+    v8::Local&lt;v8::Object&gt; ctx_obj = ctx.As&lt;v8::Object&gt;();
+    v8::Isolate* isolate = env-&gt;isolate();
+    ctx_obj-&gt;Set(context,
+                 env-&gt;errno_string(),
+                 v8::Integer::New(isolate, err)).Check();
+    ctx_obj-&gt;Set(context,
+                 env-&gt;syscall_string(),
+                 OneByteString(isolate, syscall)).Check();
+  &#125;
+  <span class="hljs-keyword">return</span> err;
+&#125;</code></pre></div>
+
+<p>AsyncCall:</p>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> Func, <span class="hljs-keyword">typename</span>... Args&gt;
+<span class="hljs-function">FSReqBase* <span class="hljs-title">AsyncDestCall</span><span class="hljs-params">(Environment* env, FSReqBase* req_wrap,</span></span>
+<span class="hljs-function"><span class="hljs-params">                         <span class="hljs-keyword">const</span> v8::FunctionCallbackInfo&lt;v8::Value&gt;&amp; args,</span></span>
+<span class="hljs-function"><span class="hljs-params">                         <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* syscall, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* dest,</span></span>
+<span class="hljs-function"><span class="hljs-params">                         <span class="hljs-keyword">size_t</span> len, <span class="hljs-keyword">enum</span> encoding enc, uv_fs_cb after,</span></span>
+<span class="hljs-function"><span class="hljs-params">                         Func fn, Args... fn_args)</span> </span>&#123;
+  CHECK_NOT_NULL(req_wrap);
+  req_wrap-&gt;Init(syscall, dest, len, enc);
+  <span class="hljs-keyword">int</span> err = req_wrap-&gt;Dispatch(fn, fn_args..., after);
+  <span class="hljs-keyword">if</span> (err &lt; <span class="hljs-number">0</span>) &#123;
+    <span class="hljs-keyword">uv_fs_t</span>* uv_req = req_wrap-&gt;req();
+    uv_req-&gt;result = err;
+    uv_req-&gt;path = <span class="hljs-literal">nullptr</span>;
+    after(uv_req);  <span class="hljs-comment">// after may delete req_wrap if there is an error</span>
+    req_wrap = <span class="hljs-literal">nullptr</span>;
+  &#125; <span class="hljs-keyword">else</span> &#123;
+    req_wrap-&gt;SetReturnValue(args);
+  &#125;
+
+  <span class="hljs-keyword">return</span> req_wrap;
+&#125;
+
+<span class="hljs-comment">// Returns nullptr if the operation fails from the start.</span>
+<span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> Func, <span class="hljs-keyword">typename</span>... Args&gt;
+<span class="hljs-function">FSReqBase* <span class="hljs-title">AsyncCall</span><span class="hljs-params">(Environment* env,</span></span>
+<span class="hljs-function"><span class="hljs-params">                     FSReqBase* req_wrap,</span></span>
+<span class="hljs-function"><span class="hljs-params">                     <span class="hljs-keyword">const</span> v8::FunctionCallbackInfo&lt;v8::Value&gt;&amp; args,</span></span>
+<span class="hljs-function"><span class="hljs-params">                     <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* syscall, <span class="hljs-keyword">enum</span> encoding enc,</span></span>
+<span class="hljs-function"><span class="hljs-params">                     uv_fs_cb after, Func fn, Args... fn_args)</span> </span>&#123;
+  <span class="hljs-keyword">return</span> AsyncDestCall(env, req_wrap, args,
+                       syscall, <span class="hljs-literal">nullptr</span>, <span class="hljs-number">0</span>, enc,
+                       after, fn, fn_args...);
+&#125;</code></pre></div>
+
+<p>注意这里有个细节，在 <code>SyncCall</code> 中，会给 fn 的最后一个参数传入 <code>nullptr</code>，<code>AsyncCall</code> 则不会。</p>
+<p><img src="https://raw.githubusercontent.com/ben-lau/blog/master/assets/images/node-io-another-details.jpeg" srcset="/img/loading.gif" alt="又是一个细节"></p>
+<p>而回到上面 <code>writeString</code> 和 <code>writeBuffer</code> 中，最终无论异步同步都是调用 <code>libuv</code>（这个是 node 的 io 库先不展开说了）的 <code>uv_fs_write</code>，只是根据 req 而分别使用 <code>AsyncCall</code> 和 <code>SyncCall</code> 去调用而已。</p>
+<p>下面我们看看 libuv 中的 <a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/deps/uv/src/unix/fs.c#L2152">uv_fs_write</a>：</p>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">uv_fs_write</span><span class="hljs-params">(<span class="hljs-keyword">uv_loop_t</span>* loop,</span></span>
+<span class="hljs-function"><span class="hljs-params">                <span class="hljs-keyword">uv_fs_t</span>* req,</span></span>
+<span class="hljs-function"><span class="hljs-params">                uv_file file,</span></span>
+<span class="hljs-function"><span class="hljs-params">                <span class="hljs-keyword">const</span> <span class="hljs-keyword">uv_buf_t</span> bufs[],</span></span>
+<span class="hljs-function"><span class="hljs-params">                <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> nbufs,</span></span>
+<span class="hljs-function"><span class="hljs-params">                <span class="hljs-keyword">int64_t</span> off,</span></span>
+<span class="hljs-function"><span class="hljs-params">                uv_fs_cb cb)</span> </span>&#123;
+  INIT(WRITE);
+
+  <span class="hljs-keyword">if</span> (bufs == <span class="hljs-literal">NULL</span> || nbufs == <span class="hljs-number">0</span>)
+    <span class="hljs-keyword">return</span> UV_EINVAL;
+
+  req-&gt;file = file;
+
+  req-&gt;nbufs = nbufs;
+  req-&gt;bufs = req-&gt;bufsml;
+  <span class="hljs-keyword">if</span> (nbufs &gt; ARRAY_SIZE(req-&gt;bufsml))
+    req-&gt;bufs = uv__malloc(nbufs * <span class="hljs-keyword">sizeof</span>(*bufs));
+
+  <span class="hljs-keyword">if</span> (req-&gt;bufs == <span class="hljs-literal">NULL</span>)
+    <span class="hljs-keyword">return</span> UV_ENOMEM;
+
+  <span class="hljs-built_in">memcpy</span>(req-&gt;bufs, bufs, nbufs * <span class="hljs-keyword">sizeof</span>(*bufs));
+
+  req-&gt;off = off;
+  POST;
+&#125;</code></pre></div>
+
+<p>这里的 cb 即为上方的回调函数，这里最终调用 POST，我们先看看 POST</p>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> POST                                                                  \</span>
+  <span class="hljs-keyword">do</span> &#123;                                                                        \
+    <span class="hljs-keyword">if</span> (cb != <span class="hljs-literal">NULL</span>) &#123;                                                         \
+      uv__req_register(loop, req);                                            \
+      uv__work_submit(loop,                                                   \
+                      &amp;req-&gt;work_req,                                         \
+                      UV__WORK_FAST_IO,                                       \
+                      uv__fs_work,                                            \
+                      uv__fs_done);                                           \
+      <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;                                                               \
+    &#125;                                                                         \
+    <span class="hljs-keyword">else</span> &#123;                                                                    \
+      uv__fs_work(&amp;req-&gt;work_req);                                            \
+      <span class="hljs-keyword">return</span> req-&gt;result;                                                     \
+    &#125;                                                                         \
+  &#125;                                                                           \
+  <span class="hljs-keyword">while</span> (<span class="hljs-number">0</span>)</code></pre></div>
+
+<p>这里的 cb 就是前面说的细节： <code>SyncCall</code> 会给最后一个参数传入 <code>nullptr</code>，最终就是在这里利用回调函数判断同步异步</p>
+<p>但是这里突然冒出来几个函数：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/deps/uv/src/unix/fs.c#L1683">uv__fs_work</a> 是处理文件 io 的函数：</li>
+</ul>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">uv__fs_work</span><span class="hljs-params">(struct uv__work* w)</span> </span>&#123;
+  <span class="hljs-keyword">int</span> retry_on_eintr;
+  <span class="hljs-keyword">uv_fs_t</span>* req;
+  <span class="hljs-keyword">ssize_t</span> r;
+
+  req = container_of(w, <span class="hljs-keyword">uv_fs_t</span>, work_req);
+  retry_on_eintr = !(req-&gt;fs_type == UV_FS_CLOSE ||
+                     req-&gt;fs_type == UV_FS_READ);
+
+  <span class="hljs-keyword">do</span> &#123;
+    errno = <span class="hljs-number">0</span>;
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> X(type, action)                                                       \</span>
+  <span class="hljs-keyword">case</span> UV_FS_ #<span class="hljs-meta"># type:                                                        \</span>
+    r = action;                                                               \
+    <span class="hljs-keyword">break</span>;
+
+    <span class="hljs-keyword">switch</span> (req-&gt;fs_type) &#123;
+    X(ACCESS, access(req-&gt;path, req-&gt;flags));
+    X(CHMOD, chmod(req-&gt;path, req-&gt;mode));
+    X(CHOWN, chown(req-&gt;path, req-&gt;uid, req-&gt;gid));
+    X(CLOSE, uv__fs_close(req-&gt;file));
+    X(COPYFILE, uv__fs_copyfile(req));
+    X(FCHMOD, fchmod(req-&gt;file, req-&gt;mode));
+    X(FCHOWN, fchown(req-&gt;file, req-&gt;uid, req-&gt;gid));
+    X(LCHOWN, lchown(req-&gt;path, req-&gt;uid, req-&gt;gid));
+    X(FDATASYNC, uv__fs_fdatasync(req));
+    X(FSTAT, uv__fs_fstat(req-&gt;file, &amp;req-&gt;statbuf));
+    X(FSYNC, uv__fs_fsync(req));
+    X(FTRUNCATE, ftruncate(req-&gt;file, req-&gt;off));
+    X(FUTIME, uv__fs_futime(req));
+    X(LUTIME, uv__fs_lutime(req));
+    X(LSTAT, uv__fs_lstat(req-&gt;path, &amp;req-&gt;statbuf));
+    X(LINK, link(req-&gt;path, req-&gt;new_path));
+    X(MKDIR, mkdir(req-&gt;path, req-&gt;mode));
+    X(MKDTEMP, uv__fs_mkdtemp(req));
+    X(MKSTEMP, uv__fs_mkstemp(req));
+    X(OPEN, uv__fs_open(req));
+    X(READ, uv__fs_read(req));
+    X(SCANDIR, uv__fs_scandir(req));
+    X(OPENDIR, uv__fs_opendir(req));
+    X(READDIR, uv__fs_readdir(req));
+    X(CLOSEDIR, uv__fs_closedir(req));
+    X(READLINK, uv__fs_readlink(req));
+    X(REALPATH, uv__fs_realpath(req));
+    X(RENAME, rename(req-&gt;path, req-&gt;new_path));
+    X(RMDIR, rmdir(req-&gt;path));
+    X(SENDFILE, uv__fs_sendfile(req));
+    X(STAT, uv__fs_stat(req-&gt;path, &amp;req-&gt;statbuf));
+    X(STATFS, uv__fs_statfs(req));
+    X(SYMLINK, symlink(req-&gt;path, req-&gt;new_path));
+    X(UNLINK, unlink(req-&gt;path));
+    X(UTIME, uv__fs_utime(req));
+    X(WRITE, uv__fs_write_all(req));
+    <span class="hljs-keyword">default</span>: <span class="hljs-built_in">abort</span>();
+    &#125;
+<span class="hljs-meta">#<span class="hljs-meta-keyword">undef</span> X</span>
+  &#125; <span class="hljs-keyword">while</span> (r == <span class="hljs-number">-1</span> &amp;&amp; errno == EINTR &amp;&amp; retry_on_eintr);
+
+  <span class="hljs-keyword">if</span> (r == <span class="hljs-number">-1</span>)
+    req-&gt;result = UV__ERR(errno);
+  <span class="hljs-keyword">else</span>
+    req-&gt;result = r;
+
+  <span class="hljs-keyword">if</span> (r == <span class="hljs-number">0</span> &amp;&amp; (req-&gt;fs_type == UV_FS_STAT ||
+                 req-&gt;fs_type == UV_FS_FSTAT ||
+                 req-&gt;fs_type == UV_FS_LSTAT)) &#123;
+    req-&gt;ptr = &amp;req-&gt;statbuf;
+  &#125;
+&#125;</code></pre></div>
+
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/deps/uv/src/threadpool.c#L261">uv__work_submit</a> 是一个把工作函数（<code>uv__fs_work</code>）和完成回调（<code>uv__fs_done</code>）加入 <code>uv__work</code>结构中，并利用 <code>post</code> 交给线程池，执行一次线程操作的函数</li>
+</ul>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">uv__work_submit</span><span class="hljs-params">(<span class="hljs-keyword">uv_loop_t</span>* loop,</span></span>
+<span class="hljs-function"><span class="hljs-params">                     struct uv__work* w,</span></span>
+<span class="hljs-function"><span class="hljs-params">                     <span class="hljs-keyword">enum</span> uv__work_kind kind,</span></span>
+<span class="hljs-function"><span class="hljs-params">                     <span class="hljs-keyword">void</span> (*work)(struct uv__work* w),</span></span>
+<span class="hljs-function"><span class="hljs-params">                     <span class="hljs-keyword">void</span> (*done)(struct uv__work* w, <span class="hljs-keyword">int</span> status))</span> </span>&#123;
+  uv_once(&amp;once, init_once);
+  w-&gt;loop = loop;
+  w-&gt;work = work;
+  w-&gt;done = done;
+  post(&amp;w-&gt;wq, kind);
+&#125;</code></pre></div>
+
+<p>这里简单介绍一下这里的 <a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/deps/uv/src/threadpool.c#L142">post</a>，他把 <code>uv__work</code> 加入进了 <code>wq</code> 链表的表尾，而 <code>wq</code> 是个全局静态变量，进程空间里的所有线程都能读取这个链表。加入之后他通过 <code>uv_cond_signal</code>唤醒一个在等待的线程来处理这个任务，而线程会在 <code>wq</code> 中取出这个 <code>uv__work</code> 并执行，并在完成后通知主线程的 io 执行 cb。</p>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">post</span><span class="hljs-params">(QUEUE* q, <span class="hljs-keyword">enum</span> uv__work_kind kind)</span> </span>&#123;
+  uv_mutex_lock(&amp;mutex);
+  <span class="hljs-keyword">if</span> (kind == UV__WORK_SLOW_IO) &#123;
+    <span class="hljs-comment">/* Insert into a separate queue. */</span>
+    QUEUE_INSERT_TAIL(&amp;slow_io_pending_wq, q);
+    <span class="hljs-keyword">if</span> (!QUEUE_EMPTY(&amp;run_slow_work_message)) &#123;
+      <span class="hljs-comment">/* Running slow I/O tasks is already scheduled =&gt; Nothing to do here.</span>
+<span class="hljs-comment">         The worker that runs said other task will schedule this one as well. */</span>
+      uv_mutex_unlock(&amp;mutex);
+      <span class="hljs-keyword">return</span>;
+    &#125;
+    q = &amp;run_slow_work_message;
+  &#125;
+
+  QUEUE_INSERT_TAIL(&amp;wq, q);
+  <span class="hljs-keyword">if</span> (idle_threads &gt; <span class="hljs-number">0</span>)
+    uv_cond_signal(&amp;cond);
+  uv_mutex_unlock(&amp;mutex);
+&#125;</code></pre></div>
+
+<p>这里关乎 libuv 的线程池，就不展开太多了，可以理解为异步模式执行工作。</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/nodejs/node/blob/main/deps/uv/src/unix/fs.c#L1755">uv__fs_done</a> 是异步 io 结束的回调了，最终调用 req-&gt;cb 即上面的 cb 函数</li>
+</ul>
+<div class="hljs"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">uv__fs_done</span><span class="hljs-params">(struct uv__work* w, <span class="hljs-keyword">int</span> status)</span> </span>&#123;
+  <span class="hljs-keyword">uv_fs_t</span>* req;
+
+  req = container_of(w, <span class="hljs-keyword">uv_fs_t</span>, work_req);
+  uv__req_unregister(req-&gt;loop, req);
+
+  <span class="hljs-keyword">if</span> (status == UV_ECANCELED) &#123;
+    assert(req-&gt;result == <span class="hljs-number">0</span>);
+    req-&gt;result = UV_ECANCELED;
+  &#125;
+
+  req-&gt;cb(req);
+&#125;</code></pre></div>
+
+<p>到这里基本就清晰了，我们回到 <code>POST</code> 中，这里使用 cb 是否存在判断该 io 操作是否异步，而 cb 存在时利用 <code>uv__work_submit</code> 把操作交给线程池；cb 不存在时就在当前线程（事件循环所在的）直接调用了。这里就是所谓的同步写入，也同时看出是如何异步写入文件的。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+                    
+                      <a class="hover-with-bg" href="/tags/NodeJs/">NodeJs</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/%E5%A6%82%E4%BD%95%E7%94%A8%E4%B8%80%E4%B8%AA%E5%AE%9A%E6%97%B6%E5%99%A8%E5%81%9A%E5%BB%B6%E6%97%B6%E9%98%9F%E5%88%97/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">如何用一个定时器做延时队列</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/%E8%B7%A8%E5%9F%9F%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%9B%9E%E4%BA%8B-%E5%9B%9B%E4%B8%AA%E8%B7%A8%E5%9F%9F%E5%8D%8F%E5%AE%9A/">
+                        <span class="hidden-mobile">跨域到底是怎么回事-四个跨域协定</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2"></div>
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <!-- <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
+    </div> -->
+    
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            
+            <span id="busuanzi_value_site_pv"></span>
+             
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            
+            <span id="busuanzi_value_site_uv"></span>
+             
+          </span>
+      
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="/js/debouncer.js" ></script>
+<script  src="/js/main.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '#post-body',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        collapseDepth: 0,
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc').css('visibility', 'visible');
+      }
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "node是如何同步写入文件的&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "left",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      searchFunc(path, 'local-search-input', 'local-search-result');
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <script>
+    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
+      function () {
+        var element = document.createElement('a');
+        $(element).attr('data-fancybox', 'images');
+        $(element).attr('href', $(this).attr('src'));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
